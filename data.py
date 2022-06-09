@@ -12,7 +12,7 @@ from sklearn.utils import shuffle
 import config
 from augmentation import AugmentStage
 
-def parse_files(filepaths: list, return_position: bool = False) -> Tuple[list, list]:
+def parse_files_json(filepaths: list, return_position: bool = False) -> Tuple[list, list]:
     bboxes = []
     glyphs = []
     positions = []
@@ -45,6 +45,35 @@ def parse_files(filepaths: list, return_position: bool = False) -> Tuple[list, l
     if return_position:
         return bboxes, positions
     return bboxes, glyphs
+
+
+
+def parse_files_txt(filepaths: list, return_position: bool = False) -> Tuple[list, list]:
+    bboxes = []
+    glyphs = []
+    positions = []
+
+    for filepath in filepaths:
+        label_path = config.json_dir / "{}{}".format(filepath.split(".")[0], config.json_extn)
+        image_path = config.images_dir / filepath
+        image = cv2.imread(str(image_path), cv2.IMREAD_COLOR)
+        if image is not None:
+            with open(label_path) as label_file:  
+                with open(label_path) as f:
+                    FileRead = f.readlines()
+
+                for line in FileRead:
+                    line_s = line.split()
+                    symbol = line_s[0]
+
+                    y_s, x_s, y_l, x_l = [int(float(u)) for u in line_s[1:]]
+
+                    bboxes.append(image[x_s:x_l, y_s:y_l])
+                    glyphs.append(symbol)
+    return bboxes, glyphs
+
+
+
 
 def filter_by_occurrence(bboxes: list, labels: list, min_noccurence: int = 10) -> Tuple[list, list]:
     label_occurence_dict = Counter(labels)
@@ -107,9 +136,16 @@ def train_data_generator(images: np.ndarray, labels: np.ndarray, device: torch.d
             start = end
 
 if __name__ == "__main__":
-    config.set_data_dirs(base_path="b-59-850")
+    config.set_data_dirs(base_path="TKH")
     filepaths = [fname for fname in os.listdir(config.images_dir) if fname.endswith(config.image_extn)]
-    bboxes, glyphs = parse_files(filepaths=filepaths)
+
+    filepaths = filepaths[:2]
+
+    if 'json' in config.json_extn:
+        bboxes, glyphs = parse_files_json(filepaths=filepaths)
+    else:
+        bboxes, glyphs = parse_files_txt(filepaths=filepaths)
+
     assert len(bboxes) == len(glyphs)
     print(f"Total number of symbols {len(glyphs)}")
     label_occurence_dict = Counter(glyphs)

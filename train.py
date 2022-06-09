@@ -10,7 +10,7 @@ from torchinfo import summary
 from sklearn.metrics import classification_report
 from sklearn.model_selection import train_test_split
 
-from data import train_data_generator, parse_files, get_w2i_dictionary
+from data import train_data_generator, parse_files_txt, parse_files_json, get_w2i_dictionary
 import config
 
 class SupervisedClassifier(nn.Module):
@@ -113,11 +113,16 @@ if __name__ == "__main__":
     random.seed(1)
     np.random.seed(1)
     # Data
-    config.set_data_dirs(base_path="b-59-850")
+    config.set_data_dirs(base_path="TKH")
     print(f"Data used {config.base_dir.stem}")
     filepaths = [fname for fname in os.listdir(config.images_dir) if fname.endswith(config.image_extn)]
     print(f"Number of pages: {len(filepaths)}")
-    images, labels = parse_files(filepaths=filepaths)
+
+    if 'json' in config.json_extn:
+        images, labels = parse_files_json(filepaths=filepaths)
+    else:
+        images, labels = parse_files_txt(filepaths=filepaths)
+
     print(f"Number of samples: {len(labels)}")
     w2i = get_w2i_dictionary(labels)
     # Preprocessing

@@ -8,7 +8,7 @@ import pandas as pd
 import config
 from model import VICReg
 from loss import vicreg_loss
-from data import parse_files, pretrain_data_generator
+from data import parse_files_json, parse_files_txt, pretrain_data_generator
 from patches import load_pages, load_patches, pretrain_data_generator as patches_generator
 
 def str2bool(v: str) -> bool:
@@ -19,7 +19,7 @@ def str2bool(v: str) -> bool:
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="VICReg pretraining arguments")
-    parser.add_argument("--ds_path", type=str, default="b-59-850", choices=["b-59-850", "b-3-28", "b-50-747", "b-53-781"], help="Dataset's path")
+    parser.add_argument("--ds_path", type=str, default="b-59-850", choices=["MTH1000", "MTH1200", "TKH", "b-59-850", "b-3-28", "b-50-747", "b-53-781"], help="Dataset's path")
     parser.add_argument("--crops_labelled", type=str2bool, default="True", help="Whether to use perfectly cropped symbol images")
     parser.add_argument("--add_crop", type=str2bool, default="True", help="Use RandomResizedCrop transform in the transform chain")
     parser.add_argument("--crop_scale", nargs="+", type=float, default=(0.5, 0.5), help="Crop scale for the RandomResizedCrop transform in the transform chain")
@@ -66,7 +66,10 @@ def main():
     name = f"Labelled_{args.crops_labelled}_"
     if args.crops_labelled == True:
         # Perfectly cropped images
-        images = parse_files(filepaths=filepaths)[0]
+        if 'json' in config.json_extn:
+            images = parse_files_json(filepaths=filepaths)[0]
+        else:
+            images = parse_files_txt(filepaths=filepaths)[0]
         size = len(images)
         print(f"Number of labelled patches: {size}")
         gen = pretrain_data_generator(images=images, device=device, batch_size=args.batch_size, add_crop=args.add_crop, crop_scale=args.crop_scale)
