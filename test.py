@@ -10,12 +10,12 @@ from sklearn.manifold import TSNE
 
 import config
 from model import CustomCNN, ResnetEncoder
-from data import parse_files,filter_by_occurrence, preprocess_image, get_w2i_dictionary
+from data import parse_files_json, parse_files_txt, filter_by_occurrence, preprocess_image, get_w2i_dictionary
 from train import train_and_test_model as supervised_train_and_test
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="KNN classification test arguments")
-    parser.add_argument("--ds_path", type=str, default="b-59-850", choices=["b-59-850", "b-3-28", "b-50-747", "b-53-781"], help="Dataset's path")
+    parser.add_argument("--ds_path", type=str, default="b-59-850", choices=["MTH1000", "MTH1200", "TKH", "b-59-850", "b-3-28", "b-50-747", "b-53-781"], help="Dataset's path")
     parser.add_argument("--min_noccurence", type=int, default=30, help="Minimum number of observations to take into account a class symbol")
     parser.add_argument("--model_name", type=str, default=None, help="Model name", required=True)
     parser.add_argument("--weights_path", type=str, default=None, help="Weights path to load")
@@ -98,8 +98,14 @@ def main():
     print(f"Data used {config.base_dir.stem}")
     filepaths = [fname for fname in os.listdir(config.images_dir) if fname.endswith(config.image_extn)]
     print(f"Number of pages: {len(filepaths)}")
+
     # Perfectly cropped images
-    images, labels = parse_files(filepaths=filepaths)
+    if 'json' in config.json_extn:
+        images, labels = parse_files_json(filepaths=filepaths)
+    else:
+        images, labels = parse_files_txt(filepaths=filepaths)
+
+
     images, labels = filter_by_occurrence(bboxes=images, labels=labels, min_noccurence=args.min_noccurence)
     # Preprocessing!
     X = []
