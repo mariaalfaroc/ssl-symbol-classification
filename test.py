@@ -15,7 +15,7 @@ from train import train_and_test_model as supervised_train_and_test
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="KNN classification test arguments")
-    parser.add_argument("--ds_path", type=str, default="b-59-850", choices=["MTH1000", "MTH1200", "TKH", "b-59-850", "b-3-28", "b-50-747", "b-53-781"], help="Dataset's path")
+    parser.add_argument("--ds_path", type=str, default="b-59-850", choices=["Egyptian", "MTH1000", "MTH1200", "TKH", "b-59-850", "b-3-28", "b-50-747", "b-53-781"], help="Dataset's path")
     parser.add_argument("--min_noccurence", type=int, default=30, help="Minimum number of observations to take into account a class symbol")
     parser.add_argument("--model_name", type=str, default=None, help="Model name", required=True)
     parser.add_argument("--weights_path", type=str, default=None, help="Weights path to load")

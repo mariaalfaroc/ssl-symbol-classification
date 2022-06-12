@@ -19,7 +19,7 @@ def str2bool(v: str) -> bool:
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="VICReg pretraining arguments")
-    parser.add_argument("--ds_path", type=str, default="b-59-850", choices=["MTH1000", "MTH1200", "TKH", "b-59-850", "b-3-28", "b-50-747", "b-53-781"], help="Dataset's path")
+    parser.add_argument("--ds_path", type=str, default="b-59-850", choices=["Egyptian", "MTH1000", "MTH1200", "TKH", "b-59-850", "b-3-28", "b-50-747", "b-53-781"], help="Dataset's path")
     parser.add_argument("--crops_labelled", type=str2bool, default="True", help="Whether to use perfectly cropped symbol images")
     parser.add_argument("--add_crop", type=str2bool, default="True", help="Use RandomResizedCrop transform in the transform chain")
     parser.add_argument("--crop_scale", nargs="+", type=float, default=(0.5, 0.5), help="Crop scale for the RandomResizedCrop transform in the transform chain")

@@ -113,7 +113,7 @@ if __name__ == "__main__":
     random.seed(1)
     np.random.seed(1)
     # Data
-    config.set_data_dirs(base_path="TKH")
+    config.set_data_dirs(base_path="Egyptian")
     print(f"Data used {config.base_dir.stem}")
     filepaths = [fname for fname in os.listdir(config.images_dir) if fname.endswith(config.image_extn)]
     print(f"Number of pages: {len(filepaths)}")

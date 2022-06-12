@@ -57,6 +57,7 @@ def parse_files_txt(filepaths: list, return_position: bool = False) -> Tuple[lis
         label_path = config.json_dir / "{}{}".format(filepath.split(".")[0], config.json_extn)
         image_path = config.images_dir / filepath
         image = cv2.imread(str(image_path), cv2.IMREAD_COLOR)
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         if image is not None:
             with open(label_path) as label_file:  
                 with open(label_path) as f:
@@ -65,11 +66,11 @@ def parse_files_txt(filepaths: list, return_position: bool = False) -> Tuple[lis
                 for line in FileRead:
                     line_s = line.split()
                     symbol = line_s[0]
-
                     y_s, x_s, y_l, x_l = [int(float(u)) for u in line_s[1:]]
 
                     bboxes.append(image[x_s:x_l, y_s:y_l])
                     glyphs.append(symbol)
+
     return bboxes, glyphs
 
 
