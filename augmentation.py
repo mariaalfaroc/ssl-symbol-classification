@@ -1,5 +1,6 @@
 from typing import Tuple
 
+import torch
 import torch.nn as nn
 import torchvision.transforms as transforms
 from torchvision.transforms import InterpolationMode
@@ -20,4 +21,5 @@ class AugmentStage(nn.Module):
         self.backbone = nn.Sequential(*layers)
     
     def forward(self, x):
-        return self.backbone(x)
+        with torch.no_grad():
+            return self.backbone(x)

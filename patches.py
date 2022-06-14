@@ -108,11 +108,12 @@ def pretrain_data_generator(images: torch.Tensor, device: torch.device, batch_si
         end = min(start + batch_size, size)
         xa = []
         xb = []
-        for i in images[start:end]:
-            i.to(device)
-            xa.append(augment(i).cpu().detach())
-            xb.append(augment(i).cpu().detach())
-        yield torch.stack(xa).to(device), torch.stack(xb).to(device)
+        if end - start > 1:
+            for i in images[start:end]:
+                i.to(device)
+                xa.append(augment(i).cpu().detach())
+                xb.append(augment(i).cpu().detach())
+            yield torch.stack(xa).to(device), torch.stack(xb).to(device)
         if end == size:
             start = 0
             np.random.shuffle(images.numpy())

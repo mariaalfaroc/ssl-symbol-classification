@@ -16,7 +16,7 @@ from train import train_and_test_model as supervised_train_and_test
 def parse_arguments():
     parser = argparse.ArgumentParser(description="KNN classification test arguments")
     parser.add_argument("--ds_path", type=str, default="b-59-850", choices=["Egyptian", "MTH1000", "MTH1200", "TKH", "b-59-850", "b-3-28", "b-50-747", "b-53-781"], help="Dataset's path")
-    parser.add_argument("--min_noccurence", type=int, default=30, help="Minimum number of observations to take into account a class symbol")
+    parser.add_argument("--min_noccurence", type=int, default=50, help="Minimum number of observations to take into account a class symbol")
     parser.add_argument("--model_name", type=str, default=None, help="Model name", required=True)
     parser.add_argument("--weights_path", type=str, default=None, help="Weights path to load")
     parser.add_argument("--encoder_features", type=int, default=1600, help="Encoder features dimension")
@@ -24,7 +24,7 @@ def parse_arguments():
     parser.add_argument("--n_neighbors", type=int, default=1, help="Number of neighbors to use")
     parser.add_argument("--epochs", type=int, default=150, help="Training epochs")
     parser.add_argument("--patience", type=int, default=150, help="Number of epochs with no improvement after which training will be stopped")
-    parser.add_argument("--batch_size", type=int, default=32, help="Batch size")
+    parser.add_argument("--batch_size", type=int, default=16, help="Batch size")
     args = parser.parse_args()
     return args
 
@@ -98,14 +98,11 @@ def main():
     print(f"Data used {config.base_dir.stem}")
     filepaths = [fname for fname in os.listdir(config.images_dir) if fname.endswith(config.image_extn)]
     print(f"Number of pages: {len(filepaths)}")
-
     # Perfectly cropped images
-    if 'json' in config.json_extn:
+    if "json" in config.json_extn:
         images, labels = parse_files_json(filepaths=filepaths)
     else:
         images, labels = parse_files_txt(filepaths=filepaths)
-
-
     images, labels = filter_by_occurrence(bboxes=images, labels=labels, min_noccurence=args.min_noccurence)
     # Preprocessing!
     X = []
@@ -144,7 +141,7 @@ def main():
     samples_per_class = [1]
     samples_per_class += range(5, 35, 5)    
     for samples in samples_per_class:
-        print(f"Training with {samples} per class")
+        print(f"Training with {samples} samples per class")
         results[samples] = []
         # Boostrap
         for _ in range(args.n_iterations):
@@ -168,8 +165,10 @@ def main():
                 predictions = knnClassifier.predict(XTest)
                 class_rep = classification_report(y_true=YTest, y_pred=predictions, output_dict=True)
             results[samples].append(100 * class_rep["accuracy"])
-        
-        writeTSNE_representation(TSNE_dir / f"{samples}_train.dat", XTrain, YTrain)
+        if "Supervised" not in args.model_name:
+            # TSNE only if KNN classifier is used
+            writeTSNE_representation(TSNE_dir / f"{samples}_train.dat", XTrain, YTrain)
+    # Save bootstrap results
     write_plot_results(output_dir / f"{args.model_name}_bootstrap_{args.n_iterations}iter.dat", results)
     
     pass

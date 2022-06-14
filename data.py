@@ -32,49 +32,42 @@ def parse_files_json(filepaths: list, return_position: bool = False) -> Tuple[li
                                 if region["type"] == "staff" and "symbols" in region:  
                                     symbols = region["symbols"]
                                     if len(symbols) > 0:
-                                        symbols.sort(key=lambda symbol: symbol["bounding_box"]["fromX"])
-                                        r_top, r_left, r_bottom, r_right = region["bounding_box"]["fromY"], region["bounding_box"]["fromX"], region["bounding_box"]["toY"], region["bounding_box"]["toX"]
-                                        if image[r_top:r_bottom, r_left:r_right] is not None:
-                                            for s in symbols:
-                                                if "bounding_box" in s and "agnostic_symbol_type" in s and "position_in_staff" in s:
-                                                    s_top, s_left, s_bottom, s_right = s["bounding_box"]["fromY"], s["bounding_box"]["fromX"], s["bounding_box"]["toY"], s["bounding_box"]["toX"]
-                                                    glyphs.append(s["agnostic_symbol_type"])
-                                                    positions.append(s["position_in_staff"])
-                                                    if (s_bottom - s_top) != 0 and (s_right - s_left) != 0 and (r_bottom - r_top) != 0:
-                                                        bboxes.append(image[s_top:s_bottom, s_left:s_right])
+                                        if all([False for s in symbols if "bounding_box" not in s.keys()]):
+                                            symbols.sort(key=lambda symbol: symbol["bounding_box"]["fromX"])
+                                            r_top, r_left, r_bottom, r_right = region["bounding_box"]["fromY"], region["bounding_box"]["fromX"], region["bounding_box"]["toY"], region["bounding_box"]["toX"]
+                                            if image[r_top:r_bottom, r_left:r_right] is not None:
+                                                for s in symbols:
+                                                    if "bounding_box" in s and "agnostic_symbol_type" in s and "position_in_staff" in s:
+                                                        s_top, s_left, s_bottom, s_right = s["bounding_box"]["fromY"], s["bounding_box"]["fromX"], s["bounding_box"]["toY"], s["bounding_box"]["toX"]
+                                                        glyphs.append(s["agnostic_symbol_type"])
+                                                        positions.append(s["position_in_staff"])
+                                                        if (s_bottom - s_top) != 0 and (s_right - s_left) != 0 and (r_bottom - r_top) != 0:
+                                                            bboxes.append(image[s_top:s_bottom, s_left:s_right])
     if return_position:
         return bboxes, positions
     return bboxes, glyphs
 
-
-
-def parse_files_txt(filepaths: list, return_position: bool = False) -> Tuple[list, list]:
+def parse_files_txt(filepaths: list) -> Tuple[list, list]:
     bboxes = []
     glyphs = []
-    positions = []
 
     for filepath in filepaths:
         label_path = config.json_dir / "{}{}".format(filepath.split(".")[0], config.json_extn)
         image_path = config.images_dir / filepath
         image = cv2.imread(str(image_path), cv2.IMREAD_COLOR)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        if image is not None:
-            with open(label_path) as label_file:  
-                with open(label_path) as f:
-                    FileRead = f.readlines()
+        if image is not None: 
+            with open(label_path) as f:
+                FileRead = f.readlines()
 
-                for line in FileRead:
-                    line_s = line.split()
-                    symbol = line_s[0]
-                    y_s, x_s, y_l, x_l = [int(float(u)) for u in line_s[1:]]
-
-                    bboxes.append(image[x_s:x_l, y_s:y_l])
-                    glyphs.append(symbol)
+            for line in FileRead:
+                line_s = line.split()
+                symbol = line_s[0]
+                y_s, x_s, y_l, x_l = [int(float(u)) for u in line_s[1:]]
+                bboxes.append(image[x_s:x_l, y_s:y_l])
+                glyphs.append(symbol)
 
     return bboxes, glyphs
-
-
-
 
 def filter_by_occurrence(bboxes: list, labels: list, min_noccurence: int = 10) -> Tuple[list, list]:
     label_occurence_dict = Counter(labels)
@@ -108,12 +101,13 @@ def pretrain_data_generator(images: list, device: torch.device, batch_size: int 
         end = min(start + batch_size, size)
         xa = []
         xb = []
-        for i in images[start:end]:
-            i = preprocess_image(i)
-            i.to(device)
-            xa.append(augment(i).cpu().detach())
-            xb.append(augment(i).cpu().detach())
-        yield torch.stack(xa).to(device), torch.stack(xb).to(device)
+        if end - start > 1:
+            for i in images[start:end]:
+                i = preprocess_image(i)
+                i.to(device)
+                xa.append(augment(i).cpu().detach())
+                xb.append(augment(i).cpu().detach())
+            yield torch.stack(xa).to(device), torch.stack(xb).to(device)
         if end == size:
             start = 0
             random.shuffle(images)
@@ -139,14 +133,11 @@ def train_data_generator(images: np.ndarray, labels: np.ndarray, device: torch.d
 if __name__ == "__main__":
     config.set_data_dirs(base_path="TKH")
     filepaths = [fname for fname in os.listdir(config.images_dir) if fname.endswith(config.image_extn)]
-
     filepaths = filepaths[:2]
-
-    if 'json' in config.json_extn:
+    if "json" in config.json_extn:
         bboxes, glyphs = parse_files_json(filepaths=filepaths)
     else:
         bboxes, glyphs = parse_files_txt(filepaths=filepaths)
-
     assert len(bboxes) == len(glyphs)
     print(f"Total number of symbols {len(glyphs)}")
     label_occurence_dict = Counter(glyphs)

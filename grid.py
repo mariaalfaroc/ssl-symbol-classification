@@ -13,7 +13,7 @@ from pretrain import str2bool
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Transformation grid image arguments")
-    parser.add_argument("--ds_path", type=str, default="b-59-850", choices=["b-59-850", "b-3-28", "b-50-747", "b-53-781"], help="Dataset's path")
+    parser.add_argument("--ds_path", type=str, default="b-59-850", choices=["Egyptian", "MTH1000", "MTH1200", "TKH", "b-59-850", "b-3-28", "b-50-747", "b-53-781"], help="Dataset's path")
     parser.add_argument("--add_crop", type=str2bool, default="True", help="Whether to add 'RandomResizeCrop' transform")
     parser.add_argument("--crop_scale", nargs="+", type=float, default=(0.5, 0.5), help="Scale (h, w) for random crop with respect to input image")
     args = parser.parse_args()
@@ -24,7 +24,11 @@ def main():
     print(args)
     config.set_data_dirs(base_path=args.ds_path)
     filepaths = [fname for fname in os.listdir(config.images_dir) if fname.endswith(config.image_extn)]
-    bboxes = parse_files(filepaths=filepaths)[0]
+    bboxes = []
+    if "json" in config.json_extn:
+        bboxes = parse_files_json(filepaths=filepaths)[0]
+    else:
+        bboxes = parse_files_txt(filepaths=filepaths)[0]
     img = bboxes[randint(0, len(bboxes) - 1)]
     img = preprocess_image(img)
     grid = [img]
