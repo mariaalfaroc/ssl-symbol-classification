@@ -64,8 +64,10 @@ def parse_files_txt(filepaths: list) -> Tuple[list, list]:
                 line_s = line.split()
                 symbol = line_s[0]
                 y_s, x_s, y_l, x_l = [int(float(u)) for u in line_s[1:]]
-                bboxes.append(image[x_s:x_l, y_s:y_l])
-                glyphs.append(symbol)
+
+                if x_l > x_s and y_l > y_s:
+                    bboxes.append(image[x_s:x_l, y_s:y_l])
+                    glyphs.append(symbol)
 
     return bboxes, glyphs
 
@@ -131,7 +133,7 @@ def train_data_generator(images: np.ndarray, labels: np.ndarray, device: torch.d
             start = end
 
 if __name__ == "__main__":
-    config.set_data_dirs(base_path="TKH")
+    config.set_data_dirs(base_path="MTH1000")
     filepaths = [fname for fname in os.listdir(config.images_dir) if fname.endswith(config.image_extn)]
     filepaths = filepaths[:2]
     if "json" in config.json_extn:

@@ -103,6 +103,12 @@ def main():
     var_loss_acc = []
     cov_loss_acc = []
 
+    loss_prev = np.Inf
+    sim_loss_prev = np.Inf 
+    var_loss_prev = np.Inf
+    cov_loss_prev = np.Inf
+
+
     current_patience = args.patience
     # Train
     best_loss = np.Inf
@@ -110,17 +116,38 @@ def main():
     for epoch in range(args.epochs):
         print(f"--Epoch {epoch + 1}--")
         print("Training:")
+        broken_epoch = False
         for _ in tqdm.tqdm(range(size // args.batch_size), position=0, leave=True):
             xa, xb = next(gen)
             optimizer.zero_grad()
             za, zb = model(xa), model(xb)
             loss, sim_loss, var_loss, cov_loss = vicreg_loss(za, zb, sim_loss_weight=args.sim_loss_weight, var_loss_weight=args.var_loss_weight, cov_loss_weight=args.cov_loss_weight)
+
+            # Breaking the loop is NaN is obtained in the loss:
+            if torch.isnan(loss):
+                broken_epoch = True
+                break
+
             loss.backward()
             optimizer.step()
-        loss_acc.append(loss.cpu().detach().item())
-        sim_loss_acc.append(sim_loss.cpu().detach().item())
-        var_loss_acc.append(var_loss.cpu().detach().item())
-        cov_loss_acc.append(cov_loss.cpu().detach().item())
+        
+            loss_prev = loss.cpu().detach().item()
+            sim_loss_prev = sim_loss.cpu().detach().item()
+            var_loss_prev = var_loss.cpu().detach().item()
+            cov_loss_prev = cov_loss.cpu().detach().item()
+        
+        if broken_epoch:
+            print("Epoch has been broken")
+            loss_acc.append(loss_prev)
+            sim_loss_acc.append(sim_loss_prev)
+            var_loss_acc.append(var_loss_prev)
+            cov_loss_acc.append(cov_loss_prev)
+        else:
+            loss_acc.append(loss.cpu().detach().item())
+            sim_loss_acc.append(sim_loss.cpu().detach().item())
+            var_loss_acc.append(var_loss.cpu().detach().item())
+            cov_loss_acc.append(cov_loss.cpu().detach().item())
+
         print(f"Epoch {epoch + 1} ; Total loss: {loss_acc[-1]} -> Invariance Loss: {sim_loss_acc[-1]} | Variance Loss {var_loss_acc[-1]} | Covariance Loss {cov_loss_acc[-1]}")
         if loss_acc[-1] < best_loss:
             print(f"Loss improved from {best_loss} to {loss_acc[-1]}. Saving encoder's weights to {encoder_filepath}")

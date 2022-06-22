@@ -121,10 +121,10 @@ def pretrain_data_generator(images: torch.Tensor, device: torch.device, batch_si
             start = end
 
 if __name__ == "__main__":
-    config.set_data_dirs(base_path="b-59-850")
+    config.set_data_dirs(base_path="MTH1000")
     filepaths = [fname for fname in os.listdir(config.images_dir) if fname.endswith(config.image_extn)]
     images = load_pages(filepaths=filepaths)
-    patches = load_patches(images)
+    patches = load_patches(images = images, kernel= (64, 64), stride= (32, 32))
     train_size = patches.shape[0]
     print(f"Number of patches: {train_size}")
     save_image(patches[random.randint(0, train_size - 1)], "check_images/patch_sample.jpg")
