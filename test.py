@@ -110,6 +110,7 @@ def main():
     supervised = False
     # 1) Convert labels to int
     w2i = get_w2i_dictionary(labels)
+    print(f"Size of vocabulary: {len(w2i)}")
     Y = np.asarray([w2i[i] for i in labels])
     # 2) Process images by encoder
     if "Flatten" in args.model_name:
@@ -118,6 +119,7 @@ def main():
     elif "Resnet" in args.model_name:
         print("Using a pretrained Resnet34 to obtain images'representations")
         encoder = ResnetEncoder()
+        encoder.eval()
         X = cnn_load(images=images, encoder=encoder)
     elif "Supervised" in args.model_name:
         print("Training a custom CNN in a supervised way")
@@ -164,7 +166,9 @@ def main():
                 knnClassifier.fit(XTrain, YTrain)
                 predictions = knnClassifier.predict(XTest)
                 class_rep = classification_report(y_true=YTest, y_pred=predictions, output_dict=True)
-            results[samples].append(100 * class_rep["accuracy"])
+            accuracy = 100 * class_rep["accuracy"]
+            print(f"Accuracy: {accuracy:.2f} - From {len(YTest)} samples")
+            results[samples].append(accuracy)
         if "Supervised" not in args.model_name:
             # TSNE only if KNN classifier is used
             writeTSNE_representation(TSNE_dir / f"{samples}_train.dat", XTrain, YTrain)
