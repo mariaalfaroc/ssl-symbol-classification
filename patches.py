@@ -81,7 +81,22 @@ def filter_patch(image: torch.Tensor) -> bool:
         useful = True
     return useful
 
-def load_patches(images: list, kernel: Tuple = (64, 64), stride: Tuple = (32, 32), use_remove_lines: bool = False) -> torch.Tensor:
+def load_patches(patches_path: str, images: list, kernel: Tuple = (64, 64), stride: Tuple = (32, 32), use_remove_lines: bool = False) -> torch.Tensor:
+    patches = None
+
+    if os.path.isfile(patches_path):
+        print(f"Loading patches from {patches_path}")
+        patches = np.load(patches_path, allow_pickle=True)
+        patches = torch.from_numpy(patches)
+    else:
+        print(f"Creating patches and loading them to {patches_path}")
+        patches = create_patches(images=images, kernel=kernel, stride=stride, use_remove_lines=use_remove_lines)
+        # Save them
+        np.save(patches_path, patches.numpy())
+    
+    return patches
+
+def create_patches(images: list, kernel: Tuple = (64, 64), stride: Tuple = (32, 32), use_remove_lines: bool = False) -> torch.Tensor:
     patches_acc = []
     for i in tqdm.tqdm(images, position=0, leave=True):
         patches = extract_patches(i, kernel, stride)

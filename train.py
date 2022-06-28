@@ -125,6 +125,7 @@ if __name__ == "__main__":
 
     print(f"Number of samples: {len(labels)}")
     w2i = get_w2i_dictionary(labels)
+    print(f"Size of vocabulary: {len(w2i)}")
     # Preprocessing
     X = np.asarray(images, dtype=object)
     Y = np.asarray([w2i[i] for i in labels], dtype=np.int64)

@@ -41,12 +41,13 @@ def flatten_load(images):
 
 def cnn_load(images, encoder):
     X = []
-    for image in images:
-        image = preprocess_image(image)
-        image = image.unsqueeze(0)
-        image_re = encoder(image).detach().numpy()
-        image_re = image_re[0]
-        X.append(image_re)
+    with torch.no_grad():
+        for image in images:
+            image = preprocess_image(image)
+            image = image.unsqueeze(0)
+            image_re = encoder(image).detach().numpy()
+            image_re = image_re[0]
+            X.append(image_re)
     return np.asarray(X)
 
 def get_train_test_split(X, Y, samples_per_class, supervised):

@@ -34,7 +34,8 @@ def parse_arguments():
     parser.add_argument("--sim_loss_weight", type=float, default=1.0, help="Weight applied to the invariance loss")
     parser.add_argument("--var_loss_weight", type=float, default=1.0, help="Weight applied to the variance loss")
     parser.add_argument("--cov_loss_weight", type=float, default=1.0, help="Weight applied to the covariance loss")
-    parser.add_argument("--perc_randomcrops", type=float, default=100.0, help="Percentage of random crops used")
+    # parser.add_argument("--perc_randomcrops", type=float, default=100.0, help="Percentage of random crops used")
+    parser.add_argument("--num_randomcrops", type=int, default=5000, help="Number of random crops used")
     args = parser.parse_args()
     return args
 
@@ -77,23 +78,27 @@ def main():
     else:
         # Patches
         images = load_pages(filepaths=filepaths)
-        patches = load_patches(images=images, kernel=args.kernel, stride=args.stride, use_remove_lines=args.remove_lines)
+        patches_path = f"Patches_k_{args.kernel}_s_{args.stride}_delLines_{args.remove_lines}.npy"
+        patches_path = config.base_dir / patches_path
+        patches = load_patches(patches_path=patches_path, images=images, kernel=args.kernel, stride=args.stride, use_remove_lines=args.remove_lines)
 
         size = patches.shape[0]
         print(f"Number of unlabelled patches BEFORE random sampling: {size}")
         
         perm = torch.randperm(patches.size(0))
-        idx = perm[:int(args.perc_randomcrops*size/100.)]
+        # idx = perm[:int(args.perc_randomcrops*size/100.)]
+        idx = perm[:args.num_randomcrops]
         patches = patches[idx]
 
         size = patches.shape[0]
-        print(f"Number of unlabelled patches AFTER sampling: {size}")
+        print(f"Number of unlabelled patches AFTER random sampling: {size}")
         gen = patches_generator(images=patches, device=device, batch_size=args.batch_size, add_crop=args.add_crop, crop_scale=args.crop_scale)
         name += f"kernel_{args.kernel}_stride_{args.stride}_delLines_{args.remove_lines}_"
 
     # Set filepaths outputs
     os.makedirs(config.output_dir, exist_ok=True)
-    name += f"ENC_{args.encoder_features}_EXP_{args.expander_features}_s_{args.sim_loss_weight}_v_{args.var_loss_weight}_c{args.cov_loss_weight}_crop_{args.add_crop}_scale_{args.crop_scale}_percCrops_{args.perc_randomcrops}"
+    # name += f"ENC_{args.encoder_features}_EXP_{args.expander_features}_s_{args.sim_loss_weight}_v_{args.var_loss_weight}_c{args.cov_loss_weight}_crop_{args.add_crop}_scale_{args.crop_scale}_percCrops_{args.perc_randomcrops}"
+    name += f"ENC_{args.encoder_features}_EXP_{args.expander_features}_s_{args.sim_loss_weight}_v_{args.var_loss_weight}_c{args.cov_loss_weight}_crop_{args.add_crop}_scale_{args.crop_scale}_numCrops_{args.num_randomcrops}"
     name = name.strip()
     name = name.replace("'", "")
     encoder_filepath = config.output_dir / f"{name}.pt"
@@ -116,7 +121,6 @@ def main():
     sim_loss_prev = np.Inf 
     var_loss_prev = np.Inf
     cov_loss_prev = np.Inf
-
 
     current_patience = args.patience
     # Train
@@ -144,7 +148,7 @@ def main():
             sim_loss_prev = sim_loss.cpu().detach().item()
             var_loss_prev = var_loss.cpu().detach().item()
             cov_loss_prev = cov_loss.cpu().detach().item()
-        
+
         if broken_epoch:
             print("Epoch has been broken")
             loss_acc.append(loss_prev)
