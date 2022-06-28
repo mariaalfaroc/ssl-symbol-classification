@@ -34,6 +34,7 @@ def parse_arguments():
     parser.add_argument("--sim_loss_weight", type=float, default=1.0, help="Weight applied to the invariance loss")
     parser.add_argument("--var_loss_weight", type=float, default=1.0, help="Weight applied to the variance loss")
     parser.add_argument("--cov_loss_weight", type=float, default=1.0, help="Weight applied to the covariance loss")
+    parser.add_argument("--perc_randomcrops", type=float, default=100.0, help="Percentage of random crops used")
     args = parser.parse_args()
     return args
 
@@ -77,14 +78,22 @@ def main():
         # Patches
         images = load_pages(filepaths=filepaths)
         patches = load_patches(images=images, kernel=args.kernel, stride=args.stride, use_remove_lines=args.remove_lines)
+
         size = patches.shape[0]
-        print(f"Number of unlabelled patches: {size}")
+        print(f"Number of unlabelled patches BEFORE random sampling: {size}")
+        
+        perm = torch.randperm(patches.size(0))
+        idx = perm[:int(args.perc_randomcrops*size/100.)]
+        patches = patches[idx]
+
+        size = patches.shape[0]
+        print(f"Number of unlabelled patches AFTER sampling: {size}")
         gen = patches_generator(images=patches, device=device, batch_size=args.batch_size, add_crop=args.add_crop, crop_scale=args.crop_scale)
         name += f"kernel_{args.kernel}_stride_{args.stride}_delLines_{args.remove_lines}_"
 
     # Set filepaths outputs
     os.makedirs(config.output_dir, exist_ok=True)
-    name += f"ENC_{args.encoder_features}_EXP_{args.expander_features}_s_{args.sim_loss_weight}_v_{args.var_loss_weight}_c{args.cov_loss_weight}_crop_{args.add_crop}_scale_{args.crop_scale}"
+    name += f"ENC_{args.encoder_features}_EXP_{args.expander_features}_s_{args.sim_loss_weight}_v_{args.var_loss_weight}_c{args.cov_loss_weight}_crop_{args.add_crop}_scale_{args.crop_scale}_percCrops_{args.perc_randomcrops}"
     name = name.strip()
     name = name.replace("'", "")
     encoder_filepath = config.output_dir / f"{name}.pt"
