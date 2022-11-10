@@ -9,14 +9,22 @@ from sklearn.metrics import classification_report
 from sklearn.manifold import TSNE
 
 import config
-from model import CustomCNN, ResnetEncoder
+from model import CustomCNN, ResnetEncoder, VggEncoder, SupervisedClassifier, ResnetClassifier, VggClassifier, ResnetEncoderVICReg, VggEncoderVICReg
 from data import parse_files_json, parse_files_txt, filter_by_occurrence, preprocess_image, get_w2i_dictionary
 from train import train_and_test_model as supervised_train_and_test
 
+
+def str2bool(v: str) -> bool:
+    if v == "True":
+        return True
+    elif v == "False":
+        return False
+
 def parse_arguments():
     parser = argparse.ArgumentParser(description="KNN classification test arguments")
-    parser.add_argument("--ds_path", type=str, default="b-59-850", choices=["Egyptian", "MTH1000", "MTH1200", "TKH", "b-59-850", "b-3-28", "b-50-747", "b-53-781"], help="Dataset's path")
+    parser.add_argument("--ds_path", type=str, default="b-59-850", choices=["Egyptian", "Greek", "MTH1000", "MTH1200", "TKH", "b-59-850", "b-3-28", "b-50-747", "b-53-781"], help="Dataset's path")
     parser.add_argument("--min_noccurence", type=int, default=50, help="Minimum number of observations to take into account a class symbol")
+    parser.add_argument("--base_model", type=str, default="CustomCNN", choices=["CustomCNN", "Resnet34", "Vgg19"], help="Base model for VICReg")
     parser.add_argument("--model_name", type=str, default=None, help="Model name", required=True)
     parser.add_argument("--weights_path", type=str, default=None, help="Weights path to load")
     parser.add_argument("--encoder_features", type=int, default=1600, help="Encoder features dimension")
@@ -25,6 +33,7 @@ def parse_arguments():
     parser.add_argument("--epochs", type=int, default=150, help="Training epochs")
     parser.add_argument("--patience", type=int, default=150, help="Number of epochs with no improvement after which training will be stopped")
     parser.add_argument("--batch_size", type=int, default=16, help="Batch size")
+    parser.add_argument("--pretrain_conv", type=str2bool, default="True", help="Pretrain convolutional models")
     args = parser.parse_args()
     return args
 
@@ -117,24 +126,48 @@ def main():
     if "Flatten" in args.model_name:
         print("No encoder; passing images as they are to the classifier")
         X = flatten_load(images=images)
-    elif "Resnet" in args.model_name:
-        print("Using a pretrained Resnet34 to obtain images'representations")
-        encoder = ResnetEncoder()
+    elif "ResnetEncoder" in args.model_name:
+        print("Using a Resnet34 to obtain images'representations - Pretrained {}".format(args.pretrain_conv))
+        encoder = ResnetEncoder(pretrained=args.pretrain_conv)
         encoder.eval()
         X = cnn_load(images=images, encoder=encoder)
+    elif "VggEncoder" in args.model_name:
+        print("Using a Vgg19 to obtain images'representations - Pretrained {}".format(args.pretrain_conv))
+        encoder = VggEncoder(pretrained=args.pretrain_conv)
+        encoder.eval()
+        X = cnn_load(images=images, encoder=encoder)
+    elif "ResnetClassifier" in args.model_name:
+        print("Using a Resnet34 as a classifier - Pretrained {}".format(args.pretrain_conv))
+        model = ResnetClassifier(num_labels=len(w2i), pretrained=args.pretrain_conv)
+        X = np.asarray(images, dtype=object)
+        supervised = True
+    elif "VggClassifier" in args.model_name:
+        print("Using a Vgg19 as a classifier - Pretrained {}".format(args.pretrain_conv))
+        model = VggClassifier(num_labels=len(w2i), pretrained=args.pretrain_conv)
+        X = np.asarray(images, dtype=object)
+        supervised = True
     elif "Supervised" in args.model_name:
         print("Training a custom CNN in a supervised way")
         X = np.asarray(images, dtype=object)
+        model = SupervisedClassifier(num_labels=len(w2i))
         supervised = True
     else:
-        print("Using a VICReg-pretrained CNN to obtain images'representations")
-        encoder = CustomCNN(encoder_features=args.encoder_features)
+        print("Using a VICReg-pretrained {} to obtain images'representations".format(args.base_model))
+        # encoder = CustomCNN(encoder_features=args.encoder_features)
+
+        if args.base_model == 'CustomCNN':
+            encoder = CustomCNN(encoder_features=args.encoder_features)
+        elif args.base_model == 'Resnet34':
+            encoder = ResnetEncoderVICReg(encoder_features=args.encoder_features)
+        elif args.base_model == 'Vgg19':
+            encoder = VggEncoderVICReg(encoder_features=args.encoder_features)
+
         encoder.load_state_dict(torch.load(args.weights_path, map_location="cpu"))
         encoder.eval()
         X = cnn_load(images=images, encoder=encoder)
 
     # Set dir output
-    output_dir = config.output_dir / args.model_name
+    output_dir = config.output_dir / '{}_Pretrain-{}'.format(args.model_name, args.pretrain_conv)
     os.makedirs(output_dir, exist_ok=True)
     TSNE_dir = output_dir / "TSNE"
     os.makedirs(TSNE_dir, exist_ok=True)
@@ -152,14 +185,15 @@ def main():
             print(f"Train size: {len(YTrain)}")
             print(f"Test size: {len(YTest)}")
             class_rep = None
-            if "Supervised" in args.model_name:
+            if supervised:
                 # Supervised
                 class_rep = supervised_train_and_test(
                     data=(XTrain, YTrain, XTest, YTest),
                     w2i=w2i,
                     batch_size=args.batch_size,
                     epochs=args.epochs,
-                    patience=args.patience
+                    patience=args.patience,
+                    model = model
                 )
             else:
                 # KNN classifier
@@ -170,7 +204,7 @@ def main():
             accuracy = 100 * class_rep["accuracy"]
             print(f"Accuracy: {accuracy:.2f} - From {len(YTest)} samples")
             results[samples].append(accuracy)
-        if "Supervised" not in args.model_name:
+        if not supervised: # "Supervised" not in args.model_name:
             # TSNE only if KNN classifier is used
             writeTSNE_representation(TSNE_dir / f"{samples}_train.dat", XTrain, YTrain)
     # Save bootstrap results

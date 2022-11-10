@@ -10,25 +10,10 @@ from torchinfo import summary
 from sklearn.metrics import classification_report
 from sklearn.model_selection import train_test_split
 
+from model import SupervisedClassifier
+
 from data import train_data_generator, parse_files_txt, parse_files_json, get_w2i_dictionary
 import config
-
-class SupervisedClassifier(nn.Module):
-    def __init__(self, num_labels: int):
-        super(SupervisedClassifier, self).__init__()
-        # Nuñez-Alcover, A., León, P. J., & Calvo-Zaragoza, J.
-        # Glyph and position classification of music symbols in early music manuscripts
-        self.encoder = CustomCNN()
-        self.decoder = nn.Sequential(
-            nn.Linear(6400, 256), 
-            nn.Dropout(0.25), 
-            nn.Linear(256, num_labels)
-        )
-
-    def forward(self, x):
-        x = self.encoder(x)
-        x = self.decoder(x)
-        return x
 
 def test_model(*, model, data_gen, steps):
     Y = []
@@ -47,7 +32,7 @@ def test_model(*, model, data_gen, steps):
     print(f"Accuracy: {accuracy:.2f} - From {len(Y)} samples")
     return accuracy, class_rep
 
-def train_and_test_model(*, data, w2i, batch_size, epochs, patience):
+def train_and_test_model(*, data, w2i, batch_size, epochs, patience, model):
     torch.cuda.empty_cache()
     gc.collect()
     # Run on GPU
@@ -61,8 +46,7 @@ def train_and_test_model(*, data, w2i, batch_size, epochs, patience):
     test_size = len(XTest)
     test_gen = train_data_generator(images=XTest, labels=YTest, device=device, batch_size=batch_size)
 
-    # Model
-    model = SupervisedClassifier(num_labels=len(w2i))
+    # Model summary:
     model.to(device)
     summary(model, input_size=[(1,) + config.INPUT_SHAPE])
 
@@ -133,11 +117,14 @@ if __name__ == "__main__":
     XTrain, XTest, YTrain, YTest = train_test_split(X, Y, test_size=0.2, random_state=1)
     print(f"Train size: {len(XTrain)}")
     print(f"Test size: {len(XTest)}")
+    # Create model:
+    model = SupervisedClassifier(num_labels=len(w2i))
     # Train and test
     train_and_test_model(
         data=(XTrain, YTrain, XTest, YTest),
         w2i=w2i,
         batch_size=32,
         epochs=150,
-        patience=10
+        patience=10,
+        model = model
     )

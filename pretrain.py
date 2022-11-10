@@ -19,7 +19,8 @@ def str2bool(v: str) -> bool:
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="VICReg pretraining arguments")
-    parser.add_argument("--ds_path", type=str, default="b-59-850", choices=["Egyptian", "MTH1000", "MTH1200", "TKH", "b-59-850", "b-3-28", "b-50-747", "b-53-781"], help="Dataset's path")
+    parser.add_argument("--ds_path", type=str, default="b-59-850", choices=["Egyptian", "Greek", "MTH1000", "MTH1200", "TKH", "b-59-850", "b-3-28", "b-50-747", "b-53-781"], help="Dataset's path")
+    parser.add_argument("--base_model", type=str, default="CustomCNN", choices=["CustomCNN", "Resnet34", "Vgg19"], help="Base model for VICReg")
     parser.add_argument("--crops_labelled", type=str2bool, default="True", help="Whether to use perfectly cropped symbol images")
     parser.add_argument("--add_crop", type=str2bool, default="True", help="Use RandomResizedCrop transform in the transform chain")
     parser.add_argument("--crop_scale", nargs="+", type=float, default=(0.5, 0.5), help="Crop scale for the RandomResizedCrop transform in the transform chain")
@@ -35,7 +36,7 @@ def parse_arguments():
     parser.add_argument("--var_loss_weight", type=float, default=1.0, help="Weight applied to the variance loss")
     parser.add_argument("--cov_loss_weight", type=float, default=1.0, help="Weight applied to the covariance loss")
     # parser.add_argument("--perc_randomcrops", type=float, default=100.0, help="Percentage of random crops used")
-    parser.add_argument("--num_randomcrops", type=int, default=5000, help="Number of random crops used")
+    parser.add_argument("--num_randomcrops", type=str, default='ALL', help="Number of random crops used")
     args = parser.parse_args()
     return args
 
@@ -85,10 +86,12 @@ def main():
         size = patches.shape[0]
         print(f"Number of unlabelled patches BEFORE random sampling: {size}")
         
-        perm = torch.randperm(patches.size(0))
-        # idx = perm[:int(args.perc_randomcrops*size/100.)]
-        idx = perm[:args.num_randomcrops]
-        patches = patches[idx]
+        if(args.num_randomcrops != 'ALL'):
+            args.num_randomcrops = int(args.num_randomcrops)
+            perm = torch.randperm(patches.size(0))
+            # idx = perm[:int(args.perc_randomcrops*size/100.)]
+            idx = perm[:args.num_randomcrops]
+            patches = patches[idx]
 
         size = patches.shape[0]
         print(f"Number of unlabelled patches AFTER random sampling: {size}")
@@ -98,14 +101,14 @@ def main():
     # Set filepaths outputs
     os.makedirs(config.output_dir, exist_ok=True)
     # name += f"ENC_{args.encoder_features}_EXP_{args.expander_features}_s_{args.sim_loss_weight}_v_{args.var_loss_weight}_c{args.cov_loss_weight}_crop_{args.add_crop}_scale_{args.crop_scale}_percCrops_{args.perc_randomcrops}"
-    name += f"ENC_{args.encoder_features}_EXP_{args.expander_features}_s_{args.sim_loss_weight}_v_{args.var_loss_weight}_c{args.cov_loss_weight}_crop_{args.add_crop}_scale_{args.crop_scale}_numCrops_{args.num_randomcrops}"
+    name += f"MOD_{args.base_model}_ENC_{args.encoder_features}_EXP_{args.expander_features}_s_{args.sim_loss_weight}_v_{args.var_loss_weight}_c{args.cov_loss_weight}_crop_{args.add_crop}_scale_{args.crop_scale}_numCrops_{args.num_randomcrops}"
     name = name.strip()
     name = name.replace("'", "")
     encoder_filepath = config.output_dir / f"{name}.pt"
     log_path = config.output_dir / f"{name}.csv"
 
     # VICReg model
-    model = VICReg(encoder_features=args.encoder_features, expander_features=args.expander_features)
+    model = VICReg(base_model = args.base_model, encoder_features=args.encoder_features, expander_features=args.expander_features)
     model.to(device)
 
     # Optimizer
