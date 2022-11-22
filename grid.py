@@ -1,10 +1,9 @@
 import argparse
 from random import randint
 
-import cv2
 import torch
-from torchvision.utils import make_grid, save_image
 import torchvision.transforms as transforms
+from torchvision.utils import make_grid, save_image
 from torchvision.transforms import InterpolationMode
 
 import config
@@ -13,7 +12,7 @@ from pretrain import str2bool
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Transformation grid image arguments")
-    parser.add_argument("--ds_path", type=str, default="b-59-850", choices=["Egyptian", "MTH1000", "MTH1200", "TKH", "b-59-850", "b-3-28", "b-50-747", "b-53-781"], help="Dataset's path")
+    parser.add_argument("--ds_path", type=str, default="b-59-850", choices=["Egyptian", "MTH1000", "MTH1200", "TKH", "b-59-850", "b-3-28", "b-50-747", "b-53-781", "AidaMathB1"], help="Dataset's path")
     parser.add_argument("--add_crop", type=str2bool, default="True", help="Whether to add 'RandomResizeCrop' transform")
     parser.add_argument("--crop_scale", nargs="+", type=float, default=(0.5, 0.5), help="Scale (h, w) for random crop with respect to input image")
     args = parser.parse_args()

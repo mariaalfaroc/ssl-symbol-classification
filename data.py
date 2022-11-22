@@ -1,18 +1,58 @@
-import os, json, statistics, random
+import os, json, random, statistics
+from typing import Tuple
 from collections import Counter
 from operator import itemgetter
-from typing import Tuple
 
 import cv2
-import numpy as np
 import torch
-from torchvision.utils import make_grid, save_image
+import numpy as np
 from sklearn.utils import shuffle
+from torchvision.utils import make_grid, save_image
 
 import config
 from augmentation import AugmentStage
 
 def parse_files_json(filepaths: list, return_position: bool = False) -> Tuple[list, list]:
+    if "AidaMathB1" in str(config.base_dir):
+        return parse_aida_json()
+    return parse_musicfiles_json(filepaths=filepaths, return_position=return_position)
+
+def parse_aida_json(num_pages: int = 500) -> Tuple[list, list]:
+    json_file = list(config.json_dir.glob(f"*{config.json_extn}"))
+    assert len(json_file) == 1, "There should be only ONE json file for the Aida Math dataset!"
+    json_file = json_file[0]
+
+    with open(json_file, "r") as json_file:
+        data = json.load(json_file)
+
+    images = []
+    glyphs = []
+    # NOTE: This is added to be able to fit it in memory (Turing's memory)
+    # for sample in data:
+    for page in range(num_pages):
+        sample = data[page]
+        image_path = config.images_dir / f"{sample['filename'][:-4]}{config.image_extn}"
+        image = cv2.imread(str(image_path), cv2.IMREAD_COLOR)
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+        if image is not None:
+            fromX = sample["image_data"]["xmins_raw"]
+            toX = sample["image_data"]["xmaxs_raw"]
+            fromY = sample["image_data"]["ymins_raw"]
+            toY = sample["image_data"]["ymaxs_raw"]
+
+            symbols = sample["image_data"]["visible_latex_chars"]
+
+            assert len(fromX) == len(toX) == len(fromY) == len(toY) == len(symbols)
+
+            for i in range(len(fromX)):
+                bbox = image[fromY[i]:toY[i], fromX[i]:toX[i]]
+                if bbox is not None:
+                    images.append(bbox)
+                    glyphs.append(symbols[i])
+    return images, glyphs
+
+def parse_musicfiles_json(filepaths: list, return_position: bool = False) -> Tuple[list, list]:
     bboxes = []
     glyphs = []
     positions = []
@@ -86,6 +126,13 @@ def get_w2i_dictionary(tokens: list) -> dict:
     return w2i
 
 def preprocess_image(image: np.ndarray) -> torch.Tensor:
+    if "AidaMathB1" in str(config.base_dir):
+        # NOTE: Add padding due to bbox being of smaller dimensions than INPUT size
+        h, w, _ = image.shape
+        if h < config.INPUT_SIZE[0]:
+            image = np.pad(image, pad_width=((0, config.INPUT_SIZE[0] - h), (0, 0), (0, 0)), constant_values=np.max(image))
+        if w < config.INPUT_SIZE[0]:
+            image = np.pad(image, pad_width=((0, 0), (0, config.INPUT_SIZE[1] - w), (0, 0)), constant_values=np.max(image))
     image = cv2.resize(image, config.INPUT_SIZE, interpolation=cv2.INTER_AREA)
     image = image / 255
     image = np.transpose(image, (2, 0, 1))

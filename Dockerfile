@@ -8,7 +8,7 @@ RUN apt install nano
 
 RUN pip install --upgrade pip
 RUN pip install opencv-python
-RUN pip install sklearn
+RUN pip install scikit-learn
 RUN pip install scikit-image
 RUN pip install tqdm
 RUN pip install torchinfo

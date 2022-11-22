@@ -1,13 +1,13 @@
-import os, random
+import os, json, random
 from typing import Tuple
 
-import tqdm
 import cv2
+import tqdm
+import torch
 import numpy as np
+import torchvision.transforms as transforms
 from skimage.measure import shannon_entropy
 from skimage.filters import threshold_sauvola
-import torch
-import torchvision.transforms as transforms
 from torchvision.transforms import InterpolationMode
 from torchvision.utils import make_grid, save_image
 
@@ -15,6 +15,28 @@ import config
 from augmentation import AugmentStage
 
 def load_pages(filepaths: list) -> list:
+    if "AidaMathB1" in str(config.base_dir):
+        filepaths = get_aida_page_names()
+        return preprocess_pages(filepaths=filepaths)
+    return preprocess_pages(filepaths=filepaths)
+
+def get_aida_page_names(num_pages: int = 500) -> list:
+    json_file = list(config.json_dir.glob(f"*{config.json_extn}"))
+    assert len(json_file) == 1, "There should be only ONE json file for the Aida Math dataset!"
+    json_file = json_file[0]
+
+    with open(json_file, "r") as json_file:
+        data = json.load(json_file)
+
+    images_names = []
+    # NOTE: This is added to be able to fit it in memory (Turing's memory)
+    # for sample in data:
+    for page in range(num_pages):
+        sample = data[page]
+        images_names.append(f"{sample['filename'][:-4]}{config.image_extn}")
+    return images_names
+
+def preprocess_pages(filepaths: list) -> list:
     images = []
     for filepath in filepaths:
         image_path = config.images_dir / filepath

@@ -1,4 +1,4 @@
-import argparse, os, gc, random
+import os, gc, random, argparse
 
 import tqdm
 import torch
@@ -14,12 +14,11 @@ from patches import load_pages, load_patches, pretrain_data_generator as patches
 def str2bool(v: str) -> bool:
     if v == "True":
         return True
-    elif v == "False":
-        return False
+    return False
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="VICReg pretraining arguments")
-    parser.add_argument("--ds_path", type=str, default="b-59-850", choices=["Egyptian", "Greek", "MTH1000", "MTH1200", "TKH", "b-59-850", "b-3-28", "b-50-747", "b-53-781"], help="Dataset's path")
+    parser.add_argument("--ds_path", type=str, default="b-59-850", choices=["Egyptian", "Greek", "MTH1000", "MTH1200", "TKH", "b-59-850", "b-3-28", "b-50-747", "b-53-781", "AidaMathB1"], help="Dataset's path")
     parser.add_argument("--base_model", type=str, default="CustomCNN", choices=["CustomCNN", "Resnet34", "Vgg19"], help="Base model for VICReg")
     parser.add_argument("--crops_labelled", type=str2bool, default="True", help="Whether to use perfectly cropped symbol images")
     parser.add_argument("--add_crop", type=str2bool, default="True", help="Use RandomResizedCrop transform in the transform chain")
@@ -36,7 +35,7 @@ def parse_arguments():
     parser.add_argument("--var_loss_weight", type=float, default=1.0, help="Weight applied to the variance loss")
     parser.add_argument("--cov_loss_weight", type=float, default=1.0, help="Weight applied to the covariance loss")
     # parser.add_argument("--perc_randomcrops", type=float, default=100.0, help="Percentage of random crops used")
-    parser.add_argument("--num_randomcrops", type=str, default='ALL', help="Number of random crops used")
+    parser.add_argument("--num_randomcrops", type=str, default="ALL", help="Number of random crops used")
     args = parser.parse_args()
     return args
 
@@ -69,7 +68,7 @@ def main():
     name = f"Labelled_{args.crops_labelled}_"
     if args.crops_labelled == True:
         # Perfectly cropped images
-        if 'json' in config.json_extn:
+        if "json" in config.json_extn:
             images = parse_files_json(filepaths=filepaths)[0]
         else:
             images = parse_files_txt(filepaths=filepaths)[0]
@@ -86,7 +85,7 @@ def main():
         size = patches.shape[0]
         print(f"Number of unlabelled patches BEFORE random sampling: {size}")
         
-        if(args.num_randomcrops != 'ALL'):
+        if args.num_randomcrops != "ALL":
             args.num_randomcrops = int(args.num_randomcrops)
             perm = torch.randperm(patches.size(0))
             # idx = perm[:int(args.perc_randomcrops*size/100.)]
@@ -120,14 +119,14 @@ def main():
     var_loss_acc = []
     cov_loss_acc = []
 
-    loss_prev = np.Inf
-    sim_loss_prev = np.Inf 
-    var_loss_prev = np.Inf
-    cov_loss_prev = np.Inf
+    loss_prev = float("Inf")
+    sim_loss_prev = float("Inf") 
+    var_loss_prev = float("Inf")
+    cov_loss_prev = float("Inf")
 
     current_patience = args.patience
     # Train
-    best_loss = np.Inf
+    best_loss = float("Inf")
     best_epoch = 0
     for epoch in range(args.epochs):
         print(f"--Epoch {epoch + 1}--")

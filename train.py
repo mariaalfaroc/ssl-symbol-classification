@@ -1,19 +1,18 @@
-import os, gc, random
-from model import CustomCNN
+import os, gc, time, random
 
 import tqdm
-import numpy as np
 import torch
+import numpy as np
 import torch.nn as nn
-import torch.nn.functional as F
 from torchinfo import summary
+import torch.nn.functional as F
+
 from sklearn.metrics import classification_report
 from sklearn.model_selection import train_test_split
 
-from model import SupervisedClassifier
-
-from data import train_data_generator, parse_files_txt, parse_files_json, get_w2i_dictionary
 import config
+from model import SupervisedClassifier
+from data import train_data_generator, parse_files_txt, parse_files_json, get_w2i_dictionary
 
 def test_model(*, model, data_gen, steps):
     Y = []
@@ -21,18 +20,18 @@ def test_model(*, model, data_gen, steps):
     model.eval()
     with torch.no_grad():
         for _ in tqdm.tqdm(range(steps), position=0, leave=True):
-                x, y = next(data_gen)
-                yhat = model(x)
-                yhat = F.softmax(yhat, dim=1)
-                yhat = torch.argmax(yhat, dim=1)
-                Y.extend(y.cpu().detach().numpy())
-                YHAT.extend(yhat.cpu().detach().numpy())
+            x, y = next(data_gen)
+            yhat = model(x)
+            yhat = F.softmax(yhat, dim=1)
+            yhat = torch.argmax(yhat, dim=1)
+            Y.extend(y.cpu().detach().numpy())
+            YHAT.extend(yhat.cpu().detach().numpy())
     class_rep = classification_report(y_true=Y, y_pred=YHAT, output_dict=True)
     accuracy = 100 * class_rep["accuracy"]
-    print(f"Accuracy: {accuracy:.2f} - From {len(Y)} samples")
+    # print(f"Accuracy: {accuracy:.2f} - From {len(Y)} samples")
     return accuracy, class_rep
 
-def train_and_test_model(*, data, w2i, batch_size, epochs, patience, model):
+def train_and_test_model(*, data, batch_size, epochs, patience, model):
     torch.cuda.empty_cache()
     gc.collect()
     # Run on GPU
@@ -46,7 +45,7 @@ def train_and_test_model(*, data, w2i, batch_size, epochs, patience, model):
     test_size = len(XTest)
     test_gen = train_data_generator(images=XTest, labels=YTest, device=device, batch_size=batch_size)
 
-    # Model summary:
+    # Model summary
     model.to(device)
     summary(model, input_size=[(1,) + config.INPUT_SHAPE])
 
@@ -63,8 +62,9 @@ def train_and_test_model(*, data, w2i, batch_size, epochs, patience, model):
     best_class_rep = None
     model.train()
     for epoch in range(epochs):
-        print(f"--Epoch {epoch + 1}--")
-        print("Training:")
+        print(f"Epoch {epoch + 1}/{epochs}")
+        start = time.time()
+        # Training
         for _ in tqdm.tqdm(range(train_size // batch_size), position=0, leave=True):
             x, y = next(train_gen)
             optimizer.zero_grad()
@@ -72,13 +72,13 @@ def train_and_test_model(*, data, w2i, batch_size, epochs, patience, model):
             loss = criterion(yhat, y)
             loss.backward()
             optimizer.step()
-        print(f"loss = {loss.cpu().detach().item()}")
-        print("Testing:")
+        # Testing
         test_accuracy, test_class_rep = test_model(model=model, data_gen=test_gen, steps=test_size // batch_size)
-        print(f"test-accuracy = {test_accuracy}")
+        end = time.time()
+        print(f"train_loss: {loss.cpu().detach().item():.4f} - test_accuracy: {test_accuracy:.2f} - {round(end-start)}s")
         # Early stopping
         if test_accuracy > best_accuracy:
-            print(f"Test accuracy improved from {best_accuracy} to {test_accuracy}")
+            print(f"Test accuracy improved from {best_accuracy:.2f} to {test_accuracy:.2f}")
             best_accuracy = test_accuracy
             best_epoch = epoch
             best_class_rep = test_class_rep
@@ -102,7 +102,7 @@ if __name__ == "__main__":
     filepaths = [fname for fname in os.listdir(config.images_dir) if fname.endswith(config.image_extn)]
     print(f"Number of pages: {len(filepaths)}")
 
-    if 'json' in config.json_extn:
+    if "json" in config.json_extn:
         images, labels = parse_files_json(filepaths=filepaths)
     else:
         images, labels = parse_files_txt(filepaths=filepaths)
@@ -117,12 +117,11 @@ if __name__ == "__main__":
     XTrain, XTest, YTrain, YTest = train_test_split(X, Y, test_size=0.2, random_state=1)
     print(f"Train size: {len(XTrain)}")
     print(f"Test size: {len(XTest)}")
-    # Create model:
+    # Create model
     model = SupervisedClassifier(num_labels=len(w2i))
     # Train and test
     train_and_test_model(
         data=(XTrain, YTrain, XTest, YTest),
-        w2i=w2i,
         batch_size=32,
         epochs=150,
         patience=10,
