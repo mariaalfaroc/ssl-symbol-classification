@@ -18,12 +18,12 @@ Datasets used:
 
 ```bibtex
 @article{alfaro2023few,
-  title={Few-Shot Symbol Classification via Self-Supervised Learning and Nearest Neighbor},
-  author={Alfaro-Contreras, Mar{\'\i}a and R{\'\i}os-Vila, Antonio and Valero-Mas, Jose J and Calvo-Zaragoza, Jorge},
-  journal={Pattern Recognition Letters},
-  volume = {167},
-  pages = {1-8},
-  year = {2023},
-  issn = {0167-8655}
+  title   = {Few-Shot Symbol Classification via Self-Supervised Learning and Nearest Neighbor},
+  author  = {Alfaro-Contreras, Mar{\'\i}a and R{\'\i}os-Vila, Antonio and Valero-Mas, Jose J and Calvo-Zaragoza, Jorge},
+  journal = {Pattern Recognition Letters},
+  volume  = {167},
+  pages   = {1-8},
+  year    = {2023},
+  issn    = {0167-8655}
 }
 ```
