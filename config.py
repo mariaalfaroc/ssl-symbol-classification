@@ -3,7 +3,7 @@ from pathlib import Path
 INPUT_SIZE = (40, 40)
 INPUT_SHAPE = (3,) + INPUT_SIZE
 
-# Datasets available: b-59-850, b-3-28, b-50-747, b-53-781, TKH, MTH1000, and MTH1200
+# Datasets available: b-59-850, b-3-28, b-50-747, b-53-781, TKH, MTH1000, MTH1200, and Greek
 # All these datasets follow the structure set in set_data_dirs()
 
 def set_data_dirs(base_path: str):

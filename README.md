@@ -1,20 +1,20 @@
 # Few-Shot Symbol Classification via Self-Supervised Learning and Nearest Neighbor
 
 Code for the paper:<br />
-    **María Alfaro-Contreras**, Antonio Ríos-Vila, Jose J. Valero-Mas, Jorge Calvo-Zaragoza<br />
+    > **María Alfaro-Contreras**, Antonio Ríos-Vila, Jose J. Valero-Mas, Jorge Calvo-Zaragoza<br />
     *[Few-Shot Symbol Classification via Self-Supervised Learning and Nearest Neighbor](https://doi.org/10.1016/j.patrec.2023.01.014)*<br />
     Pattern Recognition Letters, 167, 1-8, 2023
 
 
-## Data
 Datasets used: 
 - **Capitan** (b-59-850, b-3-28, b-50-747, b-53-781). Available [here](https://drive.google.com/file/d/19rnsw8g9yjIiCvhP038CoJSJ4Agfy-kJ/view?usp=share_link).
 - **TKH**(TKH, MTH1000, MTH1200). Available [here](https://drive.google.com/file/d/1N6TS1KRgy-ygPpv88ZvKl7Oy5jOshpzp/view?usp=share_link).
 - **Egyptian**. Available [here](https://drive.google.com/file/d/1UigqSheubMp2PVGRF9mjFQug0q55P8HA/view?usp=share_link).
-- **GRPOLY-DB** (TODO: Indicate which partition we took!). Available [here](TODO: Upload dataset).
+- **GRPOLY-DB** (Greek). Available [here](https://drive.google.com/file/d/1hfWl53uhFLNtTbhsKGrFQuxRDb3QeMwM/view?usp=share_link).
 
+----
 
-## Citation
+**Citation**
 
 ```bibtex
 @article{alfaro2023few,
