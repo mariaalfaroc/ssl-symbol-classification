@@ -19,7 +19,7 @@ def str2bool(v: str) -> bool:
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="KNN classification test arguments")
-    parser.add_argument("--ds_path", type=str, default="b-59-850", choices=["Egyptian", "Greek", "MTH1000", "MTH1200", "TKH", "b-59-850", "b-3-28", "b-50-747", "b-53-781", "AidaMathB1"], help="Dataset's path")
+    parser.add_argument("--ds_path", type=str, default="b-59-850", choices=["Egyptian", "Greek", "MTH1000", "MTH1200", "TKH", "b-59-850", "b-3-28", "b-50-747", "b-53-781"], help="Dataset's path")
     parser.add_argument("--min_noccurence", type=int, default=50, help="Minimum number of observations to take into account a class symbol")
     parser.add_argument("--base_model", type=str, default="CustomCNN", choices=["CustomCNN", "Resnet34", "Vgg19"], help="Base model for VICReg")
     parser.add_argument("--model_name", type=str, default=None, help="Model name", required=True)

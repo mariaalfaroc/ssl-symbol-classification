@@ -8,7 +8,7 @@ from torchvision.transforms import InterpolationMode
 from config import INPUT_SIZE
 
 class AugmentStage(nn.Module):
-    def __init__(self, add_crop: bool = True, crop_scale: Tuple = (0.5, 0.5)):
+    def __init__(self, add_crop: bool = True, crop_scale: Tuple = (0.5, 0.5)) -> None:
         super(AugmentStage, self).__init__()
         layers = [
             transforms.RandomHorizontalFlip(p=0.5),
@@ -20,6 +20,6 @@ class AugmentStage(nn.Module):
             layers = [transforms.RandomResizedCrop(INPUT_SIZE, scale=crop_scale, interpolation=InterpolationMode.BICUBIC)] + layers
         self.backbone = nn.Sequential(*layers)
     
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         with torch.no_grad():
             return self.backbone(x)

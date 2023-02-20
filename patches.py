@@ -15,28 +15,6 @@ import config
 from augmentation import AugmentStage
 
 def load_pages(filepaths: list) -> list:
-    if "AidaMathB1" in str(config.base_dir):
-        filepaths = get_aida_page_names()
-        return preprocess_pages(filepaths=filepaths)
-    return preprocess_pages(filepaths=filepaths)
-
-def get_aida_page_names(num_pages: int = 500) -> list:
-    json_file = list(config.json_dir.glob(f"*{config.json_extn}"))
-    assert len(json_file) == 1, "There should be only ONE json file for the Aida Math dataset!"
-    json_file = json_file[0]
-
-    with open(json_file, "r") as json_file:
-        data = json.load(json_file)
-
-    images_names = []
-    # NOTE: This is added to be able to fit it in memory (Turing's memory)
-    # for sample in data:
-    for page in range(num_pages):
-        sample = data[page]
-        images_names.append(f"{sample['filename'][:-4]}{config.image_extn}")
-    return images_names
-
-def preprocess_pages(filepaths: list) -> list:
     images = []
     for filepath in filepaths:
         image_path = config.images_dir / filepath
@@ -103,7 +81,13 @@ def filter_patch(image: torch.Tensor) -> bool:
         useful = True
     return useful
 
-def load_patches(patches_path: str, images: list, kernel: Tuple = (64, 64), stride: Tuple = (32, 32), use_remove_lines: bool = False) -> torch.Tensor:
+def load_patches(
+    patches_path: str,
+    images: list,
+    kernel: Tuple = (64, 64),
+    stride: Tuple = (32, 32),
+    use_remove_lines: bool = False
+    ) -> torch.Tensor:
     patches = None
 
     if os.path.isfile(patches_path):
@@ -118,7 +102,12 @@ def load_patches(patches_path: str, images: list, kernel: Tuple = (64, 64), stri
     
     return patches
 
-def create_patches(images: list, kernel: Tuple = (64, 64), stride: Tuple = (32, 32), use_remove_lines: bool = False) -> torch.Tensor:
+def create_patches(
+    images: list,
+    kernel: Tuple = (64, 64),
+    stride: Tuple = (32, 32),
+    use_remove_lines: bool = False
+    ) -> torch.Tensor:
     patches_acc = []
     for i in tqdm.tqdm(images, position=0, leave=True):
         patches = extract_patches(i, kernel, stride)
@@ -135,7 +124,13 @@ def create_patches(images: list, kernel: Tuple = (64, 64), stride: Tuple = (32, 
     patches_acc = torch.stack(patches_acc)
     return patches_acc
 
-def pretrain_data_generator(images: torch.Tensor, device: torch.device, batch_size: int = 32, add_crop: bool = True, crop_scale: Tuple = (0.5, 0.5)) -> Tuple[torch.Tensor, torch.Tensor]:
+def pretrain_data_generator(
+    images: torch.Tensor,
+    device: torch.device,
+    batch_size: int = 32,
+    add_crop: bool = True,
+    crop_scale: Tuple = (0.5, 0.5)
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
     augment = AugmentStage(add_crop=add_crop, crop_scale=crop_scale)
     augment.to(device)
     np.random.shuffle(images.numpy())
@@ -158,21 +153,25 @@ def pretrain_data_generator(images: torch.Tensor, device: torch.device, batch_si
             start = end
 
 if __name__ == "__main__":
+    CHECK_DIR = "CHECK_IMAGES"
+    os.makedirs(CHECK_DIR, exist_ok=True)
+
     config.set_data_dirs(base_path="MTH1000")
     filepaths = [fname for fname in os.listdir(config.images_dir) if fname.endswith(config.image_extn)]
     images = load_pages(filepaths=filepaths)
     patches = load_patches(images = images, kernel= (64, 64), stride= (32, 32))
     train_size = patches.shape[0]
     print(f"Number of patches: {train_size}")
-    save_image(patches[random.randint(0, train_size - 1)], "check_images/patch_sample.jpg")
-    save_image(make_grid(patches[:20], nrow=4), "check_images/patches.jpg")
+    save_image(patches[random.randint(0, train_size - 1)], f"{CHECK_DIR}/patch_sample.jpg")
+    save_image(make_grid(patches[:20], nrow=4), f"{CHECK_DIR}/patches.jpg")
+    
     # Generator
     gen = pretrain_data_generator(images=patches, device=torch.device("cpu"))
     xa, xb = next(gen)
     print(xa.shape, xb.shape)
-    cv2.imwrite("check_images/xa0_p.jpg", cv2.cvtColor(255*xa[0].permute(1, 2, 0).numpy(), cv2.COLOR_RGB2BGR))
-    cv2.imwrite("check_images/xb0_p.jpg", cv2.cvtColor(255*xb[0].permute(1, 2, 0).numpy(), cv2.COLOR_RGB2BGR))
-    save_image(xa[0], "check_images/xa0_p_torch.jpg")
-    save_image(xb[0], "check_images/xb0_p_torch.jpg")
-    save_image(make_grid(xa, nrow=4), "check_images/xa_p.jpg")
-    save_image(make_grid(xb, nrow=4), "check_images/xb_p.jpg")
+    cv2.imwrite(f"{CHECK_DIR}/xa0_p.jpg", cv2.cvtColor(255*xa[0].permute(1, 2, 0).numpy(), cv2.COLOR_RGB2BGR))
+    cv2.imwrite(f"{CHECK_DIR}/xb0_p.jpg", cv2.cvtColor(255*xb[0].permute(1, 2, 0).numpy(), cv2.COLOR_RGB2BGR))
+    save_image(xa[0], f"{CHECK_DIR}/xa0_p_torch.jpg")
+    save_image(xb[0], f"{CHECK_DIR}/xb0_p_torch.jpg")
+    save_image(make_grid(xa, nrow=4), f"{CHECK_DIR}/xa_p.jpg")
+    save_image(make_grid(xb, nrow=4), f"{CHECK_DIR}/xb_p.jpg")

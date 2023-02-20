@@ -29,9 +29,15 @@ def covariance_loss(za: torch.Tensor, zb: torch.Tensor) -> torch.Tensor:
     cov_loss = off_diagonal(cov_za).pow_(2).sum() / D + off_diagonal(cov_zb).pow_(2).sum() / D
     return cov_loss
 
-def vicreg_loss(za: torch.Tensor, zb: torch.Tensor, sim_loss_weight: float = 25.0, var_loss_weight: float = 25.0, cov_loss_weight: float = 1.0) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
-    sim_loss = invariance_loss(za, zb)
-    var_loss = variance_loss(za, zb)
-    cov_loss = covariance_loss(za, zb)
-    loss = sim_loss_weight * sim_loss + var_loss_weight * var_loss + cov_loss_weight * cov_loss
+def vicreg_loss(
+    za: torch.Tensor,
+    zb: torch.Tensor,
+    sim_loss_weight: float = 25.0,
+    var_loss_weight: float = 25.0,
+    cov_loss_weight: float = 1.0
+    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    sim_loss = sim_loss_weight * invariance_loss(za, zb)
+    var_loss = var_loss_weight * variance_loss(za, zb)
+    cov_loss = cov_loss_weight * covariance_loss(za, zb)
+    loss = sim_loss + var_loss + cov_loss
     return loss, sim_loss, var_loss, cov_loss

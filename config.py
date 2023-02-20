@@ -3,7 +3,7 @@ from pathlib import Path
 INPUT_SIZE = (40, 40)
 INPUT_SHAPE = (3,) + INPUT_SIZE
 
-# Datasets available: b-59-850, b-3-28, b-50-747, b-53-781, TKH, MTH1000, MTH1200, and AidaMathB1
+# Datasets available: b-59-850, b-3-28, b-50-747, b-53-781, TKH, MTH1000, and MTH1200
 # All these datasets follow the structure set in set_data_dirs()
 
 def set_data_dirs(base_path: str):
@@ -18,7 +18,7 @@ def set_data_dirs(base_path: str):
 
     base_dir = Path(base_path)
 
-    if base_path[0] == "b" or "AidaMathB1" in base_path:    # OMR data or AidaMathB1
+    if base_path[0] == "b": # OMR data
         images_dir = base_dir / "images"
         json_dir = base_dir / "json"
         folds_dir = base_dir / "folds"
