@@ -1,9 +1,9 @@
 # Few-Shot Symbol Classification via Self-Supervised Learning and Nearest Neighbor
 
 Code for the paper:<br />
-    > **María Alfaro-Contreras**, Antonio Ríos-Vila, Jose J. Valero-Mas, Jorge Calvo-Zaragoza<br />
-    *[Few-Shot Symbol Classification via Self-Supervised Learning and Nearest Neighbor](https://doi.org/10.1016/j.patrec.2023.01.014)*<br />
-    Pattern Recognition Letters, 167, 1-8, 2023
+  >**María Alfaro-Contreras**, Antonio Ríos-Vila, Jose J. Valero-Mas, Jorge Calvo-Zaragoza<br />
+  *[Few-Shot Symbol Classification via Self-Supervised Learning and Nearest Neighbor](https://doi.org/10.1016/j.patrec.2023.01.014)*<br />
+  Pattern Recognition Letters, 167, 1-8, 2023
 
 
 Datasets used: 
