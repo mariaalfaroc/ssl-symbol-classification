@@ -1,5 +1,8 @@
 # Few-Shot Symbol Classification via Self-Supervised Learning and Nearest Neighbor
 
+![PyTorch](https://img.shields.io/badge/PyTorch-%23EE4C2C.svg?style=flat&logo=PyTorch&logoColor=white) [![License](https://img.shields.io/static/v1?label=License&message=MIT&color=blue)]() 
+
+
 Code for the paper:<br />
   >**María Alfaro-Contreras**, Antonio Ríos-Vila, Jose J. Valero-Mas, Jorge Calvo-Zaragoza<br />
   *[Few-Shot Symbol Classification via Self-Supervised Learning and Nearest Neighbor](https://doi.org/10.1016/j.patrec.2023.01.014)*<br />
