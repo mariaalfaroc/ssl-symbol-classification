@@ -3,6 +3,8 @@ import os
 from typing import Tuple
 
 import cv2
+import numpy as np
+import torch
 
 import datasets.config as config
 from my_utils.preprocessing import preprocess_image
@@ -28,7 +30,7 @@ def parse_files(ds_name: str) -> Tuple[list, list]:
     return images, labels
 
 
-def load_img_pages(ds_name: str) -> list:
+def load_img_pages(ds_name: str) -> torch.Tensor:
     # Set global variables
     config.set_data_dirs(ds_name=ds_name)
 
@@ -48,6 +50,8 @@ def load_img_pages(ds_name: str) -> list:
         if image is not None:
             image = preprocess_image(image, resize=False)
             images.append(image)
+    images = np.asarray(images, dtype=np.float32)
+    images = torch.from_numpy(images)
     return images
 
 
@@ -116,22 +120,27 @@ def parse_files_json(
                                                             s["bounding_box"]["toY"],
                                                             s["bounding_box"]["toX"],
                                                         )
-                                                        glyphs.append(
-                                                            s["agnostic_symbol_type"]
-                                                        )
-                                                        positions.append(
-                                                            s["position_in_staff"]
-                                                        )
+
                                                         if (
                                                             (s_bottom - s_top) != 0
                                                             and (s_right - s_left) != 0
                                                             and (r_bottom - r_top) != 0
                                                         ):
-                                                            bboxes.append(
-                                                                image[
-                                                                    s_top:s_bottom,
-                                                                    s_left:s_right,
+                                                            image = image[
+                                                                s_top:s_bottom,
+                                                                s_left:s_right,
+                                                            ]
+                                                            image = preprocess_image(
+                                                                image
+                                                            )
+                                                            bboxes.append(image)
+                                                            glyphs.append(
+                                                                s[
+                                                                    "agnostic_symbol_type"
                                                                 ]
+                                                            )
+                                                            positions.append(
+                                                                s["position_in_staff"]
                                                             )
 
     if return_position:
@@ -164,7 +173,9 @@ def parse_files_txt(img_filenames: list) -> Tuple[list, list]:
                 y_s, x_s, y_l, x_l = [int(float(u)) for u in line_s[1:]]
 
                 if x_l > x_s and y_l > y_s:
-                    bboxes.append(image[x_s:x_l, y_s:y_l])
+                    image = image[x_s:x_l, y_s:y_l]
+                    image = preprocess_image(image)
+                    bboxes.append(image)
                     glyphs.append(symbol)
 
     return bboxes, glyphs

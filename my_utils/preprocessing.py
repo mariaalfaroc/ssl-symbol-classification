@@ -4,12 +4,11 @@ from typing import Tuple
 
 import cv2
 import numpy as np
-import torch
 
 import datasets.config as config
 
 
-def preprocess_image(image: np.ndarray, resize: bool = True) -> torch.Tensor:
+def preprocess_image(image: np.ndarray, resize: bool = True) -> np.ndarray:
     if resize:
         image = cv2.resize(
             image, config.INPUT_SIZE, interpolation=cv2.INTER_AREA
@@ -17,7 +16,6 @@ def preprocess_image(image: np.ndarray, resize: bool = True) -> torch.Tensor:
     image = image / 255  # Normalize
     image = np.transpose(image, (2, 0, 1))  # HWC -> CHW
     image = image.astype(np.float32)
-    image = torch.from_numpy(image)
     return image
 
 
