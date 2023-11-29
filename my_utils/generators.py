@@ -12,12 +12,10 @@ def pretrain_data_generator(
     images: torch.Tensor,  # bboxes or patches
     device: torch.device,
     batch_size: int = 32,
-    add_crop: bool = True,
-    crop_scale: Tuple = (0.5, 0.5),
 ) -> Tuple[torch.Tensor, torch.Tensor]:
     random.shuffle(images)
 
-    augment = AugmentStage(add_crop=add_crop, crop_scale=crop_scale)
+    augment = AugmentStage()
     augment = augment.to(device)
 
     size = len(images)

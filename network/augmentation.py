@@ -9,9 +9,14 @@ from datasets.config import INPUT_SIZE
 
 
 class AugmentStage(nn.Module):
-    def __init__(self, add_crop: bool = True, crop_scale: Tuple = (0.5, 0.5)) -> None:
+    def __init__(self) -> None:
         super(AugmentStage, self).__init__()
         layers = [
+            transforms.RandomResizedCrop(
+                INPUT_SIZE,
+                scale=(0.5, 1.0),
+                interpolation=InterpolationMode.BICUBIC,
+            ),
             transforms.RandomHorizontalFlip(p=0.5),
             transforms.RandomApply(
                 [
@@ -24,14 +29,6 @@ class AugmentStage(nn.Module):
             transforms.RandomGrayscale(p=0.2),
             transforms.RandomApply([transforms.GaussianBlur(kernel_size=23)], p=0.5),
         ]
-        if add_crop:
-            layers = [
-                transforms.RandomResizedCrop(
-                    INPUT_SIZE,
-                    scale=crop_scale,
-                    interpolation=InterpolationMode.BICUBIC,
-                )
-            ] + layers
         self.backbone = nn.Sequential(*layers)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
