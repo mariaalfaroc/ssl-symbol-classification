@@ -13,12 +13,12 @@ from torchinfo import summary
 import datasets.config as config
 from datasets.loader import load_supervised_data
 from my_utils.generators import supervised_data_generator
+from my_utils.train_utils import train_test_split, write_plot_results
 from network.model import (
     ResnetClassifier,
     SupervisedClassifier,
     VggClassifier,
 )
-from train_utils.utils import train_test_split, write_plot_results
 
 # Seed
 torch.manual_seed(1)
@@ -30,6 +30,7 @@ def run_bootstrap(
     *,
     ds_name: str,
     samples_per_class: int,
+    min_occurence: int = 50,
     model_type: str = "CustomCNN",
     pretrained: bool = False,
     epochs: int = 150,
@@ -39,9 +40,10 @@ def run_bootstrap(
     torch.cuda.empty_cache()
     gc.collect()
 
-    print("--------SUPERVISED CLASSIFICATION EXPERIMENT--------")
+    print("--------SUPERVISED CNN CLASSIFICATION EXPERIMENT--------")
     print(f"Dataset: {ds_name}")
     print(f"Samples per class: {samples_per_class}")
+    print(f"Min occurence: {min_occurence}")
     print(f"Model type: {model_type}")
     print(f"Pretrained: {pretrained}")
     print(f"Number of epochs: {epochs}")
@@ -50,11 +52,11 @@ def run_bootstrap(
     print("----------------------------------------------------")
 
     # 1) LOAD DATA
-    data_dict = load_supervised_data(ds_name=ds_name)
-    X, Y, num_classes = data_dict["X"], data_dict["Y"], data_dict["num_classes"]
+    data_dict = load_supervised_data(ds_name=ds_name, min_occurence=min_occurence)
+    X, Y, w2i = data_dict["X"], data_dict["Y"], data_dict["w2i"]
     print(f"Dataset {ds_name} information:")
     print(f"\tTotal number of samples: {len(Y)}")
-    print(f"\tNumber of classes: {num_classes}")
+    print(f"\tNumber of classes: {len(w2i)}")
     print("----------------------------------------------------")
 
     # 2) SET OUTPUT DIR
@@ -78,7 +80,7 @@ def run_bootstrap(
             YTrain=YTrain,
             XTest=XTest,
             YTest=YTest,
-            num_classes=num_classes,
+            num_classes=len(w2i),
             model_type=model_type,
             pretrained=pretrained,
             batch_size=batch_size,
@@ -97,6 +99,7 @@ def run_bootstrap(
     print(f"\tStandard deviation: {np.std(results):.2f}")
     write_plot_results(
         filepath=output_dir / "results.txt",
+        from_weights="-",
         epochs=epochs,
         batch_size=batch_size,
         results=results,
@@ -107,18 +110,16 @@ def run_bootstrap(
 ############################################# UTILS:
 
 
-def test_model(*, model, data_gen, steps):
-    Y = []
+def test_model(*, model, X, Y):
     YHAT = []
 
     model.eval()
     with torch.no_grad():
-        for _ in tqdm.tqdm(range(steps), position=0, leave=True):
-            x, y = next(data_gen)
-            yhat = model(x)
-            yhat = yhat.softmax(dim=1)
-            yhat = torch.argmax(yhat, dim=1)
-            Y.extend(y.cpu().detach().numpy())
+        for x in tqdm.tqdm(X, position=0, leave=True):
+            x = x.unsqueeze(0).to(model.device)
+            yhat = model(x)[0]
+            yhat = yhat.softmax(dim=0)
+            yhat = torch.argmax(yhat, dim=0)
             YHAT.extend(yhat.cpu().detach().numpy())
 
     class_rep = classification_report(y_true=Y, y_pred=YHAT, output_dict=True)
@@ -150,23 +151,19 @@ def train_and_test_model(
     train_gen = supervised_data_generator(
         images=XTrain, labels=YTrain, device=device, batch_size=batch_size
     )
-    test_steps = len(XTest) // batch_size
-    test_gen = supervised_data_generator(
-        images=XTest, labels=YTest, device=device, batch_size=batch_size
-    )
+    XTest = torch.from_numpy(XTest)
 
     # 2) CREATE MODEL
-    if model_type == "CustomCNN":
-        if pretrained:
-            print("CustomCNN model does not support pretrained weights")
-            print("Using random weights instead")
+    if model_type == "CustomCNN" and not pretrained:
         model = SupervisedClassifier(num_labels=num_classes)
     elif model_type == "Resnet34":
         model = ResnetClassifier(num_labels=num_classes, pretrained=pretrained)
     elif model_type == "Vgg19":
         model = VggClassifier(num_labels=num_classes, pretrained=pretrained)
     else:
-        raise NotImplementedError(f"Model type {model_type} not supported")
+        raise NotImplementedError(
+            f"Model type {model_type} with pretrained={pretrained} not supported"
+        )
     model = model.to(device)
     summary(model, input_size=[(1,) + config.INPUT_SHAPE])
 
@@ -192,9 +189,7 @@ def train_and_test_model(
             loss.backward()
             optimizer.step()
         # Testing
-        test_accuracy, test_class_rep = test_model(
-            model=model, data_gen=test_gen, steps=test_steps
-        )
+        test_accuracy, test_class_rep = test_model(model=model, X=XTest, Y=YTest)
         end = time.time()
         print(
             f"train_loss: {loss.cpu().detach().item():.4f} - test_accuracy: {test_accuracy:.2f} - {round(end-start)}s"

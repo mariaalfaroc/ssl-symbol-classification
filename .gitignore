@@ -349,5 +349,15 @@ MigrationBackup/
 # Ionide (cross platform F# VS Code tools) working folder
 .ionide/
 
-# Logs
-*.logs
+
+#########################################
+# DATASETS
+datasets/b-59-850/
+datasets/b-3-28/
+datasets/b-50-747/
+datasets/b-53-781/
+datasets/TKH/
+datasets/MTH1000/
+datasets/MTH1200/
+datasets/Egyptian/
+datasets/Greek/

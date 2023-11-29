@@ -18,4 +18,4 @@ def load_supervised_data(ds_name: str, min_occurence: int = 50) -> dict:
     X = np.asarray(X, dtype=np.int32)
     Y = np.asarray([w2i[w] for w in Y], dtype=np.int64)
 
-    return {"X": X, "Y": Y, "num_classes": len(w2i)}
+    return {"X": X, "Y": Y, "w2i": w2i}

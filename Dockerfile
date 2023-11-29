@@ -13,3 +13,4 @@ RUN pip install scikit-image
 RUN pip install tqdm
 RUN pip install torchinfo
 RUN pip install pandas
+RUN pip install fire
