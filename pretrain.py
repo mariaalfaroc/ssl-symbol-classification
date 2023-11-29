@@ -1,188 +1,225 @@
-import os, gc, random, argparse
+import gc
+import random
 
-import tqdm
-import torch
+import fire
 import numpy as np
 import pandas as pd
+import torch
+import tqdm
+from torchinfo import summary
 
-import config
-from model import VICReg
-from loss import vicreg_loss
-from data import parse_files_json, parse_files_txt, pretrain_data_generator
-from patches import load_pages, load_patches, pretrain_data_generator as patches_generator
+import datasets.config as config
+from datasets.loader import load_pretrain_data
+from my_utils.generators import pretrain_data_generator
+from network.loss import vicreg_loss
+from network.model import VICReg
 
-def str2bool(v: str) -> bool:
-    if v == "True":
-        return True
-    return False
+# Seed
+torch.manual_seed(1)
+random.seed(1)
+np.random.seed(1)
 
-def parse_arguments():
-    parser = argparse.ArgumentParser(description="VICReg pretraining arguments")
-    parser.add_argument("--ds_path", type=str, default="b-59-850", choices=["Egyptian", "Greek", "MTH1000", "MTH1200", "TKH", "b-59-850", "b-3-28", "b-50-747", "b-53-781"], help="Dataset's path")
-    parser.add_argument("--base_model", type=str, default="CustomCNN", choices=["CustomCNN", "Resnet34", "Vgg19"], help="Base model for VICReg")
-    parser.add_argument("--crops_labelled", type=str2bool, default="True", help="Whether to use perfectly cropped symbol images")
-    parser.add_argument("--add_crop", type=str2bool, default="True", help="Use RandomResizedCrop transform in the transform chain")
-    parser.add_argument("--crop_scale", nargs="+", type=float, default=(0.5, 0.5), help="Crop scale for the RandomResizedCrop transform in the transform chain")
-    parser.add_argument("--kernel", nargs="+", type=int, default=(64, 64), help="Size (height, width) of the patches")
-    parser.add_argument("--stride", nargs="+", type=int, default=(32, 32), help="Size (height, width) of the stride used when creating patches")
-    parser.add_argument("--remove_lines", type=str2bool, default="False", help="Whether to use a second filter that removes staff lines when creating patches")
-    parser.add_argument("--encoder_features", type=int, default=1600, help="Encoder features dimension")
-    parser.add_argument("--expander_features", type=int, default=1024, help="Expander features dimension")
-    parser.add_argument("--epochs", type=int, default=150, help="Training epochs")
-    parser.add_argument("--patience", type=int, default=150, help="Number of epochs with no improvement after which training will be stopped")
-    parser.add_argument("--batch_size", type=int, default=32, help="Batch size")
-    parser.add_argument("--sim_loss_weight", type=float, default=1.0, help="Weight applied to the invariance loss")
-    parser.add_argument("--var_loss_weight", type=float, default=1.0, help="Weight applied to the variance loss")
-    parser.add_argument("--cov_loss_weight", type=float, default=1.0, help="Weight applied to the covariance loss")
-    # parser.add_argument("--perc_randomcrops", type=float, default=100.0, help="Percentage of random crops used")
-    parser.add_argument("--num_randomcrops", type=str, default="ALL", help="Number of random crops used")
-    args = parser.parse_args()
-    return args
 
-def main():
-    gc.collect()
+def run_pretrain(
+    *,
+    ds_name: str,
+    supervised_data: bool = False,
+    num_random_patches: int = -1,
+    kernel: tuple = (64, 64),
+    stride: tuple = (32, 32),
+    entropy_threshold: float = 0.8,
+    model_type: str = "CustomCNN",
+    encoder_features_dim: int = 1600,
+    expander_features_dim: int = 1024,
+    epochs: int = 150,
+    batch_size: int = 16,
+    sim_loss_weight: float = 25.0,
+    var_loss_weight: float = 25.0,
+    cov_loss_weight: float = 1.0,
+):
     torch.cuda.empty_cache()
+    gc.collect()
 
-    # Run on GPU
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")    
-    print(f"Device {device}")
+    print("--------VICREG PRETRAINING EXPERIMENT--------")
+    print(f"Dataset: {ds_name}")
+    print(f"Supervised data: {supervised_data}")
+    print(f"Number of random patches: {num_random_patches}")
+    print(f"Kernel: {kernel}")
+    print(f"Stride: {stride}")
+    print(f"Entropy threshold: {entropy_threshold}")
+    print(f"Model type: {model_type}")
+    print(f"Encoder features dimension: {encoder_features_dim}")
+    print(f"Expander features dimension: {expander_features_dim}")
+    print(f"Number of epochs: {epochs}")
+    print(f"Batch size: {batch_size}")
+    print("----------------------------------------------------")
 
-    # Seed
-    torch.manual_seed(1)
-    random.seed(1)
-    np.random.seed(1)
+    # 1) LOAD DATA
+    X = load_pretrain_data(
+        ds_name=ds_name,
+        supervised=supervised_data,
+        num_random_patches=num_random_patches,
+        kernel=kernel,
+        stride=stride,
+        entropy_threshold=entropy_threshold,
+    )
 
-    args = parse_arguments()
-    # Print experiment details
-    print("Pre-training (VICReg approach) experiment")
-    print(args)
+    # 2) SET OUTPUT DIR
+    output_dir = config.output_dir / ds_name / "VICReg"
+    output_dir = output_dir / f"{model_type}"
+    output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Data
-    config.set_data_dirs(base_path=args.ds_path)
-    print(f"Data used {config.base_dir.stem}")
-    filepaths = [fname for fname in os.listdir(config.images_dir) if fname.endswith(config.image_extn)]
-    print(f"Number of pages: {len(filepaths)}")
-    images = None
-    size = None
-    gen = None
-    name = f"Labelled_{args.crops_labelled}_"
-    if args.crops_labelled == True:
-        # Perfectly cropped images
-        if "json" in config.json_extn:
-            images = parse_files_json(filepaths=filepaths)[0]
-        else:
-            images = parse_files_txt(filepaths=filepaths)[0]
-        size = len(images)
-        print(f"Number of labelled patches: {size}")
-        gen = pretrain_data_generator(images=images, device=device, batch_size=args.batch_size, add_crop=args.add_crop, crop_scale=args.crop_scale)
+    model_name = ""
+    if supervised_data:
+        model_name += "bboxes_"
     else:
-        # Patches
-        images = load_pages(filepaths=filepaths)
-        patches_path = f"Patches_k_{args.kernel}_s_{args.stride}_delLines_{args.remove_lines}.npy"
-        patches_path = config.base_dir / patches_path
-        patches = load_patches(patches_path=patches_path, images=images, kernel=args.kernel, stride=args.stride, use_remove_lines=args.remove_lines)
+        model_name = f"{num_random_patches}" if num_random_patches > 0 else "all"
+        model_name += "patches_"
+        model_name += f"k{'x'.join(map(str, kernel))}_"
+        model_name += f"s{'x'.join(map(str, stride))}_"
+        model_name += f"et{entropy_threshold}_"
+    model_name += f"encdim{encoder_features_dim}_"
+    model_name += f"expdim{expander_features_dim}_"
+    model_name += f"bs{batch_size}_"
+    model_name += f"ep{epochs}_"
+    model_name += f"sw{sim_loss_weight}_"
+    model_name += f"vw{var_loss_weight}_"
+    model_name += f"cw{cov_loss_weight}"
+    encoder_filepath = output_dir / f"{model_name}_encoder.pt"
 
-        size = patches.shape[0]
-        print(f"Number of unlabelled patches BEFORE random sampling: {size}")
-        
-        if args.num_randomcrops != "ALL":
-            args.num_randomcrops = int(args.num_randomcrops)
-            perm = torch.randperm(patches.size(0))
-            # idx = perm[:int(args.perc_randomcrops*size/100.)]
-            idx = perm[:args.num_randomcrops]
-            patches = patches[idx]
+    # 3) PRETRAINING
+    logs_dict = pretrain_model(
+        X=X,
+        encoder_filepath=str(encoder_filepath),
+        model_type=model_type,
+        encoder_features_dim=encoder_features_dim,
+        expander_features_dim=expander_features_dim,
+        batch_size=batch_size,
+        epochs=epochs,
+        sim_loss_weight=sim_loss_weight,
+        var_loss_weight=var_loss_weight,
+        cov_loss_weight=cov_loss_weight,
+    )
 
-        size = patches.shape[0]
-        print(f"Number of unlabelled patches AFTER random sampling: {size}")
-        gen = patches_generator(images=patches, device=device, batch_size=args.batch_size, add_crop=args.add_crop, crop_scale=args.crop_scale)
-        name += f"kernel_{args.kernel}_stride_{args.stride}_delLines_{args.remove_lines}_"
+    # 4) SAVE RESULTS
+    pd.DataFrame(logs_dict).to_csv(
+        output_dir / f"{model_name}_train_logs.csv", index=False
+    )
 
-    # Set filepaths outputs
-    os.makedirs(config.output_dir, exist_ok=True)
-    # name += f"ENC_{args.encoder_features}_EXP_{args.expander_features}_s_{args.sim_loss_weight}_v_{args.var_loss_weight}_c{args.cov_loss_weight}_crop_{args.add_crop}_scale_{args.crop_scale}_percCrops_{args.perc_randomcrops}"
-    name += f"MOD_{args.base_model}_ENC_{args.encoder_features}_EXP_{args.expander_features}_s_{args.sim_loss_weight}_v_{args.var_loss_weight}_c{args.cov_loss_weight}_crop_{args.add_crop}_scale_{args.crop_scale}_numCrops_{args.num_randomcrops}"
-    name = name.strip()
-    name = name.replace("'", "")
-    encoder_filepath = config.output_dir / f"{name}.pt"
-    log_path = config.output_dir / f"{name}.csv"
 
-    # VICReg model
-    model = VICReg(base_model = args.base_model, encoder_features=args.encoder_features, expander_features=args.expander_features)
-    model.to(device)
+############################################# UTILS:
 
-    # Optimizer
+
+def pretrain_model(
+    *,
+    X: torch.Tensor,
+    encoder_filepath: str,
+    model_type: str = "CustomCNN",
+    encoder_features_dim: int = 1600,
+    expander_features_dim: int = 1024,
+    batch_size: int = 16,
+    epochs: int = 150,
+    sim_loss_weight: float = 25.0,
+    var_loss_weight: float = 25.0,
+    cov_loss_weight: float = 1.0,
+):
+    torch.cuda.empty_cache()
+    gc.collect()
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"USING DEVICE: {device}")
+
+    # 1) LOAD DATA
+    train_steps = len(X) // batch_size
+    train_gen = pretrain_data_generator(images=X, device=device, batch_size=batch_size)
+
+    # 2) CREATE MODEL
+    if model_type in ["CustomCNN", "Resnet34", "Vgg19"]:
+        model = VICReg(
+            base_model=model_type,
+            encoder_features=encoder_features_dim,
+            expander_features=expander_features_dim,
+        )
+    else:
+        raise NotImplementedError(f"Model type {model_type} not supported")
+    model = model.to(device)
+    summary(model, input_size=[(1,) + config.INPUT_SHAPE])
+
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
 
-    # Instantiate logs variables
-    loss_acc = []
-    sim_loss_acc = [] 
-    var_loss_acc = []
-    cov_loss_acc = []
-
-    loss_prev = float("Inf")
-    sim_loss_prev = float("Inf") 
-    var_loss_prev = float("Inf")
-    cov_loss_prev = float("Inf")
-
-    current_patience = args.patience
-    # Train
-    best_loss = float("Inf")
+    # 3) TRAINING
     best_epoch = 0
-    for epoch in range(args.epochs):
-        print(f"--Epoch {epoch + 1}--")
-        print("Training:")
+    best_losses = {
+        "sim_loss": float("inf"),
+        "var_loss": float("inf"),
+        "cov_loss": float("inf"),
+        "total_loss": float("inf"),
+    }
+    losses_acc = {
+        "sim_loss": [],
+        "var_loss": [],
+        "cov_loss": [],
+        "total_loss": [],
+    }
+
+    model.train()
+    for epoch in range(epochs):
+        print(f"Epoch {epoch + 1}/{epochs}")
+
+        # Training
         broken_epoch = False
-        for _ in tqdm.tqdm(range(size // args.batch_size), position=0, leave=True):
-            xa, xb = next(gen)
+        for _ in tqdm.tqdm(range(train_steps), position=0, leave=True):
+            xa, xb = next(train_gen)
             optimizer.zero_grad()
             za, zb = model(xa), model(xb)
-            loss, sim_loss, var_loss, cov_loss = vicreg_loss(za, zb, sim_loss_weight=args.sim_loss_weight, var_loss_weight=args.var_loss_weight, cov_loss_weight=args.cov_loss_weight)
-
-            # Breaking the loop is NaN is obtained in the loss:
+            loss_dict = vicreg_loss(
+                za=za,
+                zb=zb,
+                sim_loss_weight=sim_loss_weight,
+                var_loss_weight=var_loss_weight,
+                cov_loss_weight=cov_loss_weight,
+            )
+            loss = loss_dict["loss"]
             if torch.isnan(loss):
                 broken_epoch = True
                 break
-
             loss.backward()
             optimizer.step()
-        
-            loss_prev = loss.cpu().detach().item()
-            sim_loss_prev = sim_loss.cpu().detach().item()
-            var_loss_prev = var_loss.cpu().detach().item()
-            cov_loss_prev = cov_loss.cpu().detach().item()
 
         if broken_epoch:
-            print("Epoch has been broken")
-            loss_acc.append(loss_prev)
-            sim_loss_acc.append(sim_loss_prev)
-            var_loss_acc.append(var_loss_prev)
-            cov_loss_acc.append(cov_loss_prev)
+            for k, v in losses_acc.items():
+                losses_acc[k].append(v[-1])
         else:
-            loss_acc.append(loss.cpu().detach().item())
-            sim_loss_acc.append(sim_loss.cpu().detach().item())
-            var_loss_acc.append(var_loss.cpu().detach().item())
-            cov_loss_acc.append(cov_loss.cpu().detach().item())
+            for k, v in loss_dict.items():
+                losses_acc[k].append(v.cpu().detach().item())
 
-        print(f"Epoch {epoch + 1} ; Total loss: {loss_acc[-1]} -> Invariance Loss: {sim_loss_acc[-1]} | Variance Loss {var_loss_acc[-1]} | Covariance Loss {cov_loss_acc[-1]}")
-        if loss_acc[-1] < best_loss:
-            print(f"Loss improved from {best_loss} to {loss_acc[-1]}. Saving encoder's weights to {encoder_filepath}")
-            best_loss = loss_acc[-1]
+        print_info = []
+        for k, v in losses_acc.items():
+            print_info.append(f"{k}: {v[-1]:.4f}")
+        print_info = " - ".join(print_info)
+        print(print_info)
+
+        # Save best model
+        if losses_acc["loss"][-1] < best_losses["loss"]:
+            print(
+                f"Loss improved from {best_losses['loss']} to {losses_acc['loss'][-1]}. Saving encoder's weights to {encoder_filepath}"
+            )
+            best_losses = {
+                "sim_loss": losses_acc["sim_loss"][-1],
+                "var_loss": losses_acc["var_loss"][-1],
+                "cov_loss": losses_acc["cov_loss"][-1],
+                "total_loss": losses_acc["loss"][-1],
+            }
             best_epoch = epoch
             model.save(path=encoder_filepath)
-            current_patience = args.patience
-        else:
-            # Early stopping
-            current_patience -= 1
-            if current_patience == 0:
-                break
-    print(f"Epoch {best_epoch + 1} achieved lowest loss value = {best_loss:.2f}")
 
-    # Save logs
-    logs = {"loss" : loss_acc, "sim_loss" : sim_loss_acc, "var_loss" : var_loss_acc, "cov_loss" : cov_loss_acc}
-    logs = pd.DataFrame.from_dict(logs)
-    logs.to_csv(log_path, index=False)
+    # 4) PRINT BEST RESULTS
+    print(
+        f"Epoch {best_epoch + 1} achieved lowest loss value = {best_losses['loss']:.4f}"
+    )
 
-    pass
+    return losses_acc
+
 
 if __name__ == "__main__":
-    main()
+    fire.Fire(run_pretrain)

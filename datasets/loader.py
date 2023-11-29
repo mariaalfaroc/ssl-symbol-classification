@@ -32,7 +32,7 @@ def load_pretrain_data(
     stride: tuple = (32, 32),
     entropy_threshold: float = 0.8,
 ) -> torch.Tensor:
-    # 1) Get either bounding boxes or patches
+    # Get either bounding boxes or patches
     if supervised:
         # Bboxes
         X, _ = parse_files(ds_name=ds_name)

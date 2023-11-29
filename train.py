@@ -1,6 +1,5 @@
 import gc
 import random
-import time
 
 import fire
 import numpy as np
@@ -179,7 +178,6 @@ def train_and_test_model(
     for epoch in range(epochs):
         print(f"Epoch {epoch + 1}/{epochs}")
 
-        start = time.time()
         # Training
         for _ in tqdm.tqdm(range(train_steps), position=0, leave=True):
             x, y = next(train_gen)
@@ -190,9 +188,8 @@ def train_and_test_model(
             optimizer.step()
         # Testing
         test_accuracy, test_class_rep = test_model(model=model, X=XTest, Y=YTest)
-        end = time.time()
         print(
-            f"train_loss: {loss.cpu().detach().item():.4f} - test_accuracy: {test_accuracy:.2f} - {round(end-start)}s"
+            f"train_loss: {loss.cpu().detach().item():.4f} - test_accuracy: {test_accuracy:.2f}"
         )
 
         # Save best model

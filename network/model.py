@@ -26,6 +26,8 @@ class VICReg(nn.Module):
     ):
         super(VICReg, self).__init__()
         self.base_model = base_model
+        self.encoder_features = encoder_features
+        self.expander_features = expander_features
 
         if self.base_model == "CustomCNN":
             self.encoder = CustomCNN(encoder_features=encoder_features)
@@ -46,7 +48,14 @@ class VICReg(nn.Module):
         return x
 
     def save(self, path):
-        torch.save(self.encoder.state_dict(), path)
+        torch.save(
+            {
+                "encoder_features": self.encoder_features,
+                "expander_features": self.expander_features,
+                "encoder_state_dict": self.encoder.state_dict(),
+            },
+            path,
+        )
 
 
 # --------------------------------------------------------------------------- CUSTOM CNN
