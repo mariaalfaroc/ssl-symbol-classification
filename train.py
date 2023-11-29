@@ -2,6 +2,7 @@ import gc
 import random
 import time
 
+import fire
 import numpy as np
 import torch
 import torch.nn as nn
@@ -217,3 +218,7 @@ def train_and_test_model(
     )
 
     return best_class_rep
+
+
+if __name__ == "__main__":
+    fire.Fire(run_bootstrap)
