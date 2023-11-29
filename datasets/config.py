@@ -18,9 +18,9 @@ def set_data_dirs(ds_name: str):
     global labels_dir
     global folds_dir
     global output_dir
+    global patches_dir
     global image_extn
     global label_extn
-    global patches_file
 
     assert ds_name in DATASETS, f"Dataset {ds_name} not found"
 
@@ -37,4 +37,4 @@ def set_data_dirs(ds_name: str):
         label_extn = ".txt"
     folds_dir = base_dir / "folds"
     output_dir = base_dir / "experiments"
-    patches_file = base_dir / "patches.npy"
+    patches_dir = base_dir / "patches"

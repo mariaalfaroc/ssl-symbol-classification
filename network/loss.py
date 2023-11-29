@@ -47,4 +47,9 @@ def vicreg_loss(
     var_loss = var_loss_weight * variance_loss(za, zb)
     cov_loss = cov_loss_weight * covariance_loss(za, zb)
     loss = sim_loss + var_loss + cov_loss
-    return loss, sim_loss, var_loss, cov_loss
+    return {
+        "loss": loss,
+        "sim_loss": sim_loss,
+        "var_loss": var_loss,
+        "cov_loss": cov_loss,
+    }
