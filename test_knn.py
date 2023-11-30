@@ -14,7 +14,13 @@ from my_utils.train_utils import (
     write_plot_results,
     write_tsne_representation,
 )
-from network.model import CustomCNN, ResnetEncoderVICReg, VggEncoderVICReg
+from network.model import (
+    CustomCNN,
+    ResnetEncoder,
+    ResnetEncoderVICReg,
+    VggEncoder,
+    VggEncoderVICReg,
+)
 
 # Seed
 torch.manual_seed(1)
@@ -28,7 +34,6 @@ def run_bootstrap(
     samples_per_class: int,
     min_occurence: int = 50,
     model_type: str = "CustomCNN",
-    encoder_features_dim: int = 1600,
     pretrained: bool = False,
     checkpoint_path: str = "",
     num_runs: int = 5,
@@ -78,7 +83,6 @@ def run_bootstrap(
             XTest=XTest,
             YTest=YTest,
             model_type=model_type,
-            encoder_features_dim=encoder_features_dim,
             pretrained=pretrained,
             checkpoint_path=checkpoint_path,
         )
@@ -89,10 +93,6 @@ def run_bootstrap(
         tsne_filepath = ""
         if checkpoint_path != "":
             tsne_filepath += checkpoint_path.split("/")[-1] + "-"
-        else:
-            if model_type != "Flatten":
-                # Pretrained with IMAGENET
-                tsne_filepath += f"encdim{encoder_features_dim}-"
         tsne_filepath += (
             f"test_on_{samples_per_class}spc_with{min_occurence}-run{run}.dat"
         )
@@ -112,11 +112,7 @@ def run_bootstrap(
     print(f"\tMean accuracy: {np.mean(results):.2f}")
     print(f"\tStandard deviation: {np.std(results):.2f}")
     from_weights = checkpoint_path if pretrained else "-"
-    from_weights = (
-        f"imagenet with dim={encoder_features_dim}"
-        if pretrained and checkpoint_path == ""
-        else from_weights
-    )
+    from_weights = "imagenet" if pretrained and checkpoint_path == "" else from_weights
     write_plot_results(
         filepath=output_dir / "results.txt",
         from_weights=from_weights,
@@ -147,7 +143,6 @@ def train_and_test_knn(
     XTest: np.ndarray,
     YTest: np.ndarray,
     model_type: str = "Flatten",
-    encoder_features_dim: int = 1600,
     pretrained: bool = False,
     checkpoint_path: str = "",
 ):
@@ -169,7 +164,6 @@ def train_and_test_knn(
             print(
                 f"Using a VICReg-pretrained {model_type} to obtain images' representations"
             )
-            print("Overriding encoder_features_dim argument to match checkpoint")
             checkpoint = torch.load(checkpoint_path)
             if model_type == "CustomCNN":
                 encoder = CustomCNN(encoder_features=checkpoint["encoder_features"])
@@ -190,15 +184,10 @@ def train_and_test_knn(
             print(
                 f"Using a IMAGENET-pretrained {model_type} to obtain images' representations"
             )
-            print(f"Using encoder_features_dim={encoder_features_dim}")
             if model_type == "Resnet34":
-                encoder = ResnetEncoderVICReg(
-                    encoder_features=encoder_features_dim, pretrained=pretrained
-                )
+                encoder = ResnetEncoder(pretrained=pretrained)
             elif model_type == "Vgg19":
-                encoder = VggEncoderVICReg(
-                    encoder_features=encoder_features_dim, pretrained=pretrained
-                )
+                encoder = VggEncoder(pretrained=pretrained)
 
         encoder.eval()
         XTrain = get_images_representations(encoder=encoder, X=torch.from_numpy(XTrain))
