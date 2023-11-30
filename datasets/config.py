@@ -16,7 +16,6 @@ def set_data_dirs(ds_name: str):
     global base_dir
     global images_dir
     global labels_dir
-    global folds_dir
     global output_dir
     global patches_dir
     global image_extn
@@ -35,6 +34,5 @@ def set_data_dirs(ds_name: str):
         labels_dir = base_dir / "label_char"
         image_extn = ".jpg"
         label_extn = ".txt"
-    folds_dir = base_dir / "folds"
     output_dir = base_dir / "experiments"
     patches_dir = base_dir / "patches"

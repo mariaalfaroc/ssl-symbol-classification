@@ -88,12 +88,13 @@ def run_bootstrap(
         # 3) SAVE TSNE REPRESENTATION
         tsne_filepath = ""
         if checkpoint_path != "":
-            tsne_filepath += checkpoint_path.split("/")[-1] + "_"
+            tsne_filepath += checkpoint_path.split("/")[-1] + "-"
         else:
             if model_type != "Flatten":
-                tsne_filepath += f"encdim{encoder_features_dim}_"
+                # Pretrained with IMAGENET
+                tsne_filepath += f"encdim{encoder_features_dim}-"
         tsne_filepath += (
-            f"-test_on_{samples_per_class}spc_with{min_occurence}-run{run}.dat"
+            f"test_on_{samples_per_class}spc_with{min_occurence}-run{run}.dat"
         )
         tsne_filepath = tsne_dir / tsne_filepath
         write_tsne_representation(

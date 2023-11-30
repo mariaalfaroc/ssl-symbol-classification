@@ -1,4 +1,3 @@
-import random
 from typing import Tuple
 
 import numpy as np
@@ -11,9 +10,10 @@ from network.augmentation import AugmentStage
 def pretrain_data_generator(
     images: torch.Tensor,  # bboxes or patches
     device: torch.device,
-    batch_size: int = 32,
+    batch_size: int = 16,
 ) -> Tuple[torch.Tensor, torch.Tensor]:
-    random.shuffle(images)
+    perm = torch.randperm(len(images))
+    images = images[perm]
 
     augment = AugmentStage()
     augment = augment.to(device)
@@ -30,13 +30,14 @@ def pretrain_data_generator(
 
         if end == size:
             start = 0
-            random.shuffle(images)
+            perm = torch.randperm(len(images))
+            images = images[perm]
         else:
             start = end
 
 
 def supervised_data_generator(
-    images: np.ndarray, labels: np.ndarray, device: torch.device, batch_size: int = 32
+    images: np.ndarray, labels: np.ndarray, device: torch.device, batch_size: int = 16
 ) -> Tuple[torch.Tensor, torch.Tensor]:
     images, labels = shuffle(images, labels, random_state=1)
 

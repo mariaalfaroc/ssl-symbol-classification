@@ -52,6 +52,9 @@ def run_pretrain(
     print(f"Expander features dimension: {expander_features_dim}")
     print(f"Number of epochs: {epochs}")
     print(f"Batch size: {batch_size}")
+    print(f"Similarity loss weight: {sim_loss_weight}")
+    print(f"Variance loss weight: {var_loss_weight}")
+    print(f"Covariance loss weight: {cov_loss_weight}")
     print("----------------------------------------------------")
 
     # 1) LOAD DATA

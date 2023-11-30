@@ -157,7 +157,7 @@ def parse_files_txt(img_filenames: list) -> Tuple[list, list]:
     glyphs = []
 
     for img_filename in img_filenames:
-        label_filename = img_filename.split(".")[0] + config.label_extn
+        label_filename = img_filename.replace(config.image_extn, config.label_extn)
         label_path = config.labels_dir / label_filename
 
         image_path = config.images_dir / img_filename

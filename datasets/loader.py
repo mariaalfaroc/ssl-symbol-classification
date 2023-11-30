@@ -39,6 +39,7 @@ def load_pretrain_data(
         X = np.asarray(X, dtype=np.int32)
         X = torch.from_numpy(X)
     else:
+        # Patches
         patches_filepath = config.patches_dir / "patches_"
         patches_filepath += f"k{'x'.join(map(str, kernel))}_"
         patches_filepath += f"s{'x'.join(map(str, stride))}_"
