@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 import torch
 
@@ -41,6 +43,7 @@ def load_pretrain_data(
     else:
         # Patches
         config.set_data_dirs(ds_name=ds_name)
+        os.makedirs(config.patches_dir, exist_ok=True)
         patches_filepath = "patches_"
         patches_filepath += f"k{'x'.join(map(str, kernel))}_"
         patches_filepath += f"s{'x'.join(map(str, stride))}_"
