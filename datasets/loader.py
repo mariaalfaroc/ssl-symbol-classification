@@ -18,7 +18,7 @@ def load_supervised_data(ds_name: str, min_occurence: int = 50) -> dict:
     w2i = get_w2i_dictionary(tokens=Y)
 
     # 4) Preprocessing
-    X = np.asarray(X, dtype=np.int32)
+    X = np.asarray(X, dtype=np.float32)
     Y = np.asarray([w2i[w] for w in Y], dtype=np.int64)
 
     return {"X": X, "Y": Y, "w2i": w2i}
@@ -36,7 +36,7 @@ def load_pretrain_data(
     if supervised:
         # Bboxes
         X, _ = parse_files(ds_name=ds_name)
-        X = np.asarray(X, dtype=np.int32)
+        X = np.asarray(X, dtype=np.float32)
         X = torch.from_numpy(X)
     else:
         # Patches

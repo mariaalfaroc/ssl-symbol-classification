@@ -1,5 +1,3 @@
-from typing import Tuple
-
 import torch
 import torch.nn as nn
 import torchvision.transforms as transforms
@@ -9,7 +7,7 @@ from datasets.config import INPUT_SIZE
 
 
 class AugmentStage(nn.Module):
-    def __init__(self) -> None:
+    def __init__(self):
         super(AugmentStage, self).__init__()
         layers = [
             transforms.RandomResizedCrop(

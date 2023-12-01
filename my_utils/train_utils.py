@@ -64,8 +64,8 @@ def train_test_split(
         YTest.extend(Y[test_samples])
 
     return (
-        np.asarray(XTrain, dtype=np.int32),
+        np.asarray(XTrain, dtype=np.float32),
         np.asarray(YTrain, dtype=np.int64),
-        np.asarray(XTest, dtype=np.int32),
+        np.asarray(XTest, dtype=np.float32),
         np.asarray(YTest, dtype=np.int64),
     )
