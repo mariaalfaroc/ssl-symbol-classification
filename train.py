@@ -59,7 +59,7 @@ def run_bootstrap(
     print("----------------------------------------------------")
 
     # 2) SET OUTPUT DIR
-    output_dir = config.output_dir / ds_name / "supervised"
+    output_dir = config.output_dir / "supervised"
     output_dir = output_dir / f"{model_type}-Pretrained{pretrained}"
     output_dir.mkdir(parents=True, exist_ok=True)
 

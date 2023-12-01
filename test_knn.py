@@ -60,7 +60,7 @@ def run_bootstrap(
     print("----------------------------------------------------")
 
     # 2) SET OUTPUT DIR
-    output_dir = config.output_dir / ds_name / "knn"
+    output_dir = config.output_dir / "knn"
     output_dir = output_dir / f"{model_type}-Pretrained{pretrained}"
     output_dir.mkdir(parents=True, exist_ok=True)
     tsne_dir = output_dir / "tsne"

@@ -68,7 +68,7 @@ def run_pretrain(
     )
 
     # 2) SET OUTPUT DIR
-    output_dir = config.output_dir / ds_name / "VICReg"
+    output_dir = config.output_dir / "VICReg"
     output_dir = output_dir / f"{model_type}"
     output_dir.mkdir(parents=True, exist_ok=True)
 
