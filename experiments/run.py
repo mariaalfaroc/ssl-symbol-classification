@@ -1,7 +1,11 @@
+import sys
+
 from experiments.config import DS_PRETRAIN_HPARAMS, DS_TEST_HPARAMS
 from pretrain import run_pretrain as pretrain
 from test_knn import run_bootstrap as test_knn
 from train import run_bootstrap as train
+
+sys.path.append("./")
 
 
 def run_approach_experiments(ds_pretrain_hparams: dict, ds_test_hparams: dict):

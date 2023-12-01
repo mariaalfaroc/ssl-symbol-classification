@@ -126,14 +126,14 @@ def parse_files_json(
                                                             and (s_right - s_left) != 0
                                                             and (r_bottom - r_top) != 0
                                                         ):
-                                                            image = image[
-                                                                s_top:s_bottom,
-                                                                s_left:s_right,
-                                                            ]
-                                                            image = preprocess_image(
-                                                                image
+                                                            bboxes.append(
+                                                                preprocess_image(
+                                                                    image[
+                                                                        s_top:s_bottom,
+                                                                        s_left:s_right,
+                                                                    ]
+                                                                )
                                                             )
-                                                            bboxes.append(image)
                                                             glyphs.append(
                                                                 s[
                                                                     "agnostic_symbol_type"
@@ -173,9 +173,7 @@ def parse_files_txt(img_filenames: list) -> Tuple[list, list]:
                 y_s, x_s, y_l, x_l = [int(float(u)) for u in line_s[1:]]
 
                 if x_l > x_s and y_l > y_s:
-                    image = image[x_s:x_l, y_s:y_l]
-                    image = preprocess_image(image)
-                    bboxes.append(image)
+                    bboxes.append(preprocess_image(image[x_s:x_l, y_s:y_l]))
                     glyphs.append(symbol)
 
     return bboxes, glyphs
