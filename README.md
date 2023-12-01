@@ -48,10 +48,10 @@ The datasets used in this work, namely *Capitan*, *TKH*, *Egyptian*, and *GRPOLY
 
 To run the code, you'll need to meet certain requirements which are specified in the [`Dockerfile`](Dockerfile). Alternatively, you can set up a virtual environment if preferred.
 
-Once you have prepared your environment (either a Docker container or a virtual environment), you are ready to begin. Execute the [`run_experiments.sh`](run_experiments.sh) script to replicate the experiments from our work:
+Once you have prepared your environment (either a Docker container or a virtual environment), you are ready to begin. Execute the [`experiments/run.py`](experiments/run.py) script to replicate the experiments from our work:
 
-```bash
-$ bash run_experiments.sh
+```python
+python experiments/run.py
 ```
 
 ## Citations

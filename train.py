@@ -34,7 +34,7 @@ def run_bootstrap(
     pretrained: bool = False,
     epochs: int = 150,
     batch_size: int = 16,
-    num_runs: int = 10,
+    num_runs: int = 5,
 ):
     torch.cuda.empty_cache()
     gc.collect()
