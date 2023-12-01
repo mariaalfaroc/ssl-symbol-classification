@@ -62,7 +62,7 @@ python experiments/run.py
   doi       = {10.1016/j.patrec.2023.01.014},
 }
 
-@article{rios2022few,
+@inproceedings{rios2022few,
   title     =   {{Few-Shot Music Symbol Classification via Self-Supervised Learning and Nearest Neighbor}},
   author    =   {R{\'\i}os-Vila, Antonio and Alfaro-Contreras, Mar{\'\i}a and Valero-Mas, Jose J and Calvo-Zaragoza, Jorge},
   booktitle =   {{Proceedings of the 3rd International Workshop Pattern Recognition for Cultural Heritage}},
