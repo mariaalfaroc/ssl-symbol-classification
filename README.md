@@ -24,7 +24,7 @@
 
 ## About
 
-We propose a three-stage process for unlabelled self-supervised learning (SSL) symbol classication:
+We propose a three-stage process for unlabelled self-supervised learning (SSL) symbol classification:
 
 <p align="center">
   <img src="extras/workflow_final.png" alt="content" style="border: 1px solid black; width: 500px;">
