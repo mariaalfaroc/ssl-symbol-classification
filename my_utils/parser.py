@@ -30,10 +30,7 @@ def parse_files(ds_name: str) -> Tuple[list, list]:
     return images, labels
 
 
-def load_img_pages(ds_name: str) -> torch.Tensor:
-    # Set global variables
-    config.set_data_dirs(ds_name=ds_name)
-
+def load_img_pages() -> torch.Tensor:
     # Retrieve filepaths
     img_filenames = [
         fname

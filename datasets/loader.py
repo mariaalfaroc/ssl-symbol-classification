@@ -40,12 +40,13 @@ def load_pretrain_data(
         X = torch.from_numpy(X)
     else:
         # Patches
-        patches_filepath = config.patches_dir / "patches_"
+        config.set_data_dirs(ds_name=ds_name)
+        patches_filepath = "patches_"
         patches_filepath += f"k{'x'.join(map(str, kernel))}_"
         patches_filepath += f"s{'x'.join(map(str, stride))}_"
         patches_filepath += f"et{entropy_threshold}.npy"
+        patches_filepath = config.patches_dir / patches_filepath
         X = load_patches(
-            ds_name=ds_name,
             patches_filepath=str(patches_filepath),
             kernel=kernel,
             stride=stride,

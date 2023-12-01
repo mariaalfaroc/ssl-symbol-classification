@@ -14,7 +14,6 @@ from my_utils.parser import load_img_pages
 
 
 def load_patches(
-    ds_name: str,
     patches_filepath: str,
     kernel: tuple = (64, 64),
     stride: tuple = (32, 32),
@@ -27,7 +26,7 @@ def load_patches(
         patches = torch.from_numpy(patches)
     else:
         print(f"Creating patches and saving them to {patches_filepath}")
-        images = load_img_pages(ds_name=ds_name)
+        images = load_img_pages()
         patches = create_patches(
             images=images,
             kernel=kernel,
