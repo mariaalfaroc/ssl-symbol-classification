@@ -30,7 +30,7 @@ def parse_files(ds_name: str) -> Tuple[list, list]:
     return images, labels
 
 
-def load_img_pages() -> torch.Tensor:
+def load_img_pages() -> list:
     # Retrieve filepaths
     img_filenames = [
         fname
@@ -47,8 +47,6 @@ def load_img_pages() -> torch.Tensor:
         if image is not None:
             image = preprocess_image(image, resize=False)
             images.append(image)
-    images = np.asarray(images, dtype=np.float32)
-    images = torch.from_numpy(images)
     return images
 
 

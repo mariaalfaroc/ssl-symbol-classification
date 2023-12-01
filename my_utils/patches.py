@@ -43,14 +43,14 @@ def load_patches(
 
 
 def create_patches(
-    images: torch.Tensor,
+    images: list,
     kernel: tuple = (64, 64),
     stride: tuple = (32, 32),
     entropy_threshold: float = 0.8,
 ) -> torch.Tensor:
     all_patches = []
     for i in tqdm.tqdm(images, position=0, leave=True):
-        patches = extract_patches(i, kernel, stride)
+        patches = extract_patches(torch.from_numpy(i), kernel, stride)
         for p in patches:
             useful = filter_patch(p, entropy_threshold)
             if useful:
