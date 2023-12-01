@@ -156,13 +156,13 @@ def pretrain_model(
         "sim_loss": float("inf"),
         "var_loss": float("inf"),
         "cov_loss": float("inf"),
-        "total_loss": float("inf"),
+        "loss": float("inf"),
     }
     losses_acc = {
         "sim_loss": [],
         "var_loss": [],
         "cov_loss": [],
-        "total_loss": [],
+        "loss": [],
     }
 
     model.train()
@@ -211,7 +211,7 @@ def pretrain_model(
                 "sim_loss": losses_acc["sim_loss"][-1],
                 "var_loss": losses_acc["var_loss"][-1],
                 "cov_loss": losses_acc["cov_loss"][-1],
-                "total_loss": losses_acc["loss"][-1],
+                "loss": losses_acc["loss"][-1],
             }
             best_epoch = epoch
             model.save(path=encoder_filepath)
