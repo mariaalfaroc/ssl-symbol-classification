@@ -7,15 +7,9 @@
 <h4 align="center">Full text available <a href="https://doi.org/10.1016/j.patrec.2023.01.014" target="_blank">here</a>.</h4>
 
 <p align="center">
-  <a href="https://www.python.org/">
-    <img src="https://img.shields.io/badge/python-3.9.0-orange" alt="Gitter">
-  </a>
-  <a href="https://pytorch.org/">
-    <img src="https://img.shields.io/badge/PyTorch-%23EE4C2C.svg?style=flat&logo=PyTorch&logoColor=white" alt="PyTorch">
-  </a>
-  <a href="#license">
-    <img src="https://img.shields.io/static/v1?label=License&message=MIT&color=blue" alt="License">
-  </a>  
+  <img src="https://img.shields.io/badge/python-3.9.0-orange" alt="Gitter">
+  <img src="https://img.shields.io/badge/PyTorch-%23EE4C2C.svg?style=flat&logo=PyTorch&logoColor=white" alt="PyTorch">
+  <img src="https://img.shields.io/static/v1?label=License&message=MIT&color=blue" alt="License">
 </p>
 
 
@@ -33,7 +27,7 @@
 We propose a three-stage process for unlabelled self-supervised learning (SSL) symbol classication:
 
 <p align="center">
-  <img src="extras/workflow_final.png" alt="content" style="border: 1px solid black; width: 400px;">
+  <img src="extras/workflow_final.png" alt="content" style="border: 1px solid black; width: 500px;">
 </p>
 
 1) **Extraction of isolated symbols from unlabelled documents.** Symbols are automatically extracted from unlabelled documents using a sliding-window approach. The documents are divided into patches, which are then converted to grayscale and binarized. The entropy value of each patch is calculated, and patches with an entropy value greater than a user-defined threshold are considered potential symbols.
