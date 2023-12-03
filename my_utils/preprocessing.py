@@ -26,16 +26,16 @@ def get_w2i_dictionary(labels: list) -> dict:
 
 
 def filter_by_occurrence(
-    bboxes: list, labels: list, min_noccurence: int = 10
+    bboxes: list, labels: list, min_occurence: int = 10
 ) -> Tuple[list, list]:
     label_occurence_dict = Counter(labels)
     ids_kept = [
         id
         for id, label in enumerate(labels)
-        if label_occurence_dict[label] >= min_noccurence
+        if label_occurence_dict[label] >= min_occurence
     ]
     filtered_bboxes = list(itemgetter(*ids_kept)(bboxes))
     filtered_labels = list(itemgetter(*ids_kept)(labels))
-    print(f"Removing labels that appear less than {min_noccurence} times")
+    print(f"Removing labels that appear less than {min_occurence} times")
     print(f"Before: {len(labels)} samples, After: {len(filtered_labels)} samples")
     return filtered_bboxes, filtered_labels
