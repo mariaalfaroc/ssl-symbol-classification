@@ -77,7 +77,7 @@ def run_bootstrap(
             samples_per_class=samples_per_class,
         )
         # 3.2) Train and test KNN classifier
-        accuracy = train_and_test_knn(
+        accuracy, XTrain_embedded = train_and_test_knn(
             XTrain=XTrain,
             YTrain=YTrain,
             XTest=XTest,
@@ -99,8 +99,8 @@ def run_bootstrap(
         tsne_filepath = tsne_dir / tsne_filepath
         write_tsne_representation(
             filepath=tsne_filepath,
-            x=XTest,
-            y=YTest,
+            x=XTrain_embedded,
+            y=YTrain,
             w2i=w2i,
         )
 
@@ -212,7 +212,7 @@ def train_and_test_knn(
     accuracy = 100 * class_rep["accuracy"]
     print(f"Accuracy: {accuracy:.2f}")
 
-    return accuracy
+    return accuracy, XTrain
 
 
 if __name__ == "__main__":
