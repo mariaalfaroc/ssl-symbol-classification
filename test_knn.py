@@ -133,7 +133,7 @@ def get_images_representations(*, encoder, X, device):
             x = x.unsqueeze(0).to(device)
             y = encoder(x)[0].cpu().detach().numpy()
             Y.append(y)
-    return np.asarray(Y)
+    return np.asarray(Y).reshape(X.shape[0], -1)
 
 
 def train_and_test_knn(
@@ -187,6 +187,7 @@ def train_and_test_knn(
             elif model_type == "Vgg19":
                 encoder = VggEncoder(pretrained=pretrained)
 
+        encoder = encoder.to(device)
         encoder.eval()
         XTrain = get_images_representations(
             encoder=encoder, X=torch.from_numpy(XTrain), device=device
