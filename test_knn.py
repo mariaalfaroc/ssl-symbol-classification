@@ -126,11 +126,11 @@ def run_bootstrap(
 ############################################# UTILS:
 
 
-def get_images_representations(*, encoder, X):
+def get_images_representations(*, encoder, X, device):
     Y = []
     with torch.no_grad():
         for x in X:
-            x = x.unsqueeze(0).to(encoder.device)
+            x = x.unsqueeze(0).to(device)
             y = encoder(x)[0].cpu().detach().numpy()
             Y.append(y)
     return np.asarray(Y)
@@ -188,8 +188,12 @@ def train_and_test_knn(
                 encoder = VggEncoder(pretrained=pretrained)
 
         encoder.eval()
-        XTrain = get_images_representations(encoder=encoder, X=torch.from_numpy(XTrain))
-        XTest = get_images_representations(encoder=encoder, X=torch.from_numpy(XTest))
+        XTrain = get_images_representations(
+            encoder=encoder, X=torch.from_numpy(XTrain), device=device
+        )
+        XTest = get_images_representations(
+            encoder=encoder, X=torch.from_numpy(XTest), device=device
+        )
 
     else:
         raise NotImplementedError(

@@ -109,13 +109,13 @@ def run_bootstrap(
 ############################################# UTILS:
 
 
-def test_model(*, model, X, Y):
+def test_model(*, model, X, Y, device):
     YHAT = []
 
     model.eval()
     with torch.no_grad():
         for x in tqdm.tqdm(X, position=0, leave=True):
-            x = x.unsqueeze(0).to(model.device)
+            x = x.unsqueeze(0).to(device)
             yhat = model(x)[0]
             yhat = yhat.softmax(dim=0)
             yhat = torch.argmax(yhat, dim=0)
@@ -187,7 +187,9 @@ def train_and_test_model(
             loss.backward()
             optimizer.step()
         # Testing
-        test_accuracy, test_class_rep = test_model(model=model, X=XTest, Y=YTest)
+        test_accuracy, test_class_rep = test_model(
+            model=model, X=XTest, Y=YTest, device=device
+        )
         print(
             f"train_loss: {loss.cpu().detach().item():.4f} - test_accuracy: {test_accuracy:.2f}"
         )
