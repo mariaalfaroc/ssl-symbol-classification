@@ -17,7 +17,7 @@ def load_supervised_data(ds_name: str, min_occurence: int = 50) -> dict:
     X, Y = filter_by_occurrence(bboxes=X, labels=Y, min_occurence=min_occurence)
 
     # 3) Get w2i dictionary
-    w2i = get_w2i_dictionary(tokens=Y)
+    w2i = get_w2i_dictionary(labels=Y)
 
     # 4) Preprocessing
     X = np.asarray(X, dtype=np.float32)
