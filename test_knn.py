@@ -164,7 +164,7 @@ def train_and_test_knn(
             print(
                 f"Using a VICReg-pretrained {model_type} to obtain images' representations"
             )
-            checkpoint = torch.load(checkpoint_path)
+            checkpoint = torch.load(checkpoint_path, map_location=device)
             if model_type == "CustomCNN":
                 encoder = CustomCNN(encoder_features=checkpoint["encoder_features"])
             elif model_type == "Resnet34":
@@ -175,9 +175,7 @@ def train_and_test_knn(
                 encoder = VggEncoderVICReg(
                     encoder_features=checkpoint["encoder_features"]
                 )
-            encoder.load_state_dict(
-                checkpoint["encoder_state_dict"], map_location=device
-            )
+            encoder.load_state_dict(checkpoint["encoder_state_dict"])
 
         # Pretrained with IMAGENET
         elif model_type in ["Resnet34", "Vgg19"] and checkpoint_path == "":
