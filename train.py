@@ -119,7 +119,7 @@ def test_model(*, model, X, Y, device):
             yhat = model(x)[0]
             yhat = yhat.softmax(dim=0)
             yhat = torch.argmax(yhat, dim=0)
-            YHAT.extend(yhat.item())
+            YHAT.append(yhat.item())
 
     class_rep = classification_report(y_true=Y.tolist(), y_pred=YHAT, output_dict=True)
     accuracy = 100 * class_rep["accuracy"]
