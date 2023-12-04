@@ -66,7 +66,7 @@ def run_bootstrap(
     # 3) RUN BOOTSTRAP
     results = []
     for run in range(num_runs):
-        print(f"\t Bootstrap run {run + 1}/{num_runs}")
+        print(f"Bootstrap run {run + 1}/{num_runs}")
         # 3.1) Get samples
         XTrain, YTrain, XTest, YTest = train_test_split(
             X=X,
@@ -119,9 +119,9 @@ def test_model(*, model, X, Y, device):
             yhat = model(x)[0]
             yhat = yhat.softmax(dim=0)
             yhat = torch.argmax(yhat, dim=0)
-            YHAT.extend(yhat.cpu().detach().numpy())
+            YHAT.extend(yhat.item())
 
-    class_rep = classification_report(y_true=Y, y_pred=YHAT, output_dict=True)
+    class_rep = classification_report(y_true=Y.tolist(), y_pred=YHAT, output_dict=True)
     accuracy = 100 * class_rep["accuracy"]
 
     return accuracy, class_rep

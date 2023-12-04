@@ -69,7 +69,7 @@ def run_bootstrap(
     # 3) RUN BOOTSTRAP
     results = []
     for run in range(num_runs):
-        print(f"\t Bootstrap run {run + 1}/{num_runs}")
+        print(f"Bootstrap run {run + 1}/{num_runs}")
         # 3.1) Get samples
         XTrain, YTrain, XTest, YTest = train_test_split(
             X=X,
