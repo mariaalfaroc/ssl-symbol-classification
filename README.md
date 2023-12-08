@@ -27,7 +27,7 @@
 We propose a three-stage process for unlabelled self-supervised learning (SSL) symbol classification:
 
 <p align="center">
-  <img src="extras/workflow_final.png" alt="content" style="border: 1px solid black; width: 500px;">
+  <img src="extras/workflow_final.png" alt="content" style="border: 1px solid black; width: 800px;">
 </p>
 
 1) **Extraction of isolated symbols from unlabelled documents.** Symbols are automatically extracted from unlabelled documents using a sliding-window approach. The documents are divided into patches, which are then converted to grayscale and binarized. The entropy value of each patch is calculated, and patches with an entropy value greater than a user-defined threshold are considered potential symbols.
